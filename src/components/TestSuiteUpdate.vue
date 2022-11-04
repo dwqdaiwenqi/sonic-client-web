@@ -1,168 +1,168 @@
 <script setup>
-  /*
-   *  Copyright (C) [SonicCloudOrg] Sonic Project
-   *
-   *  Licensed under the Apache License, Version 2.0 (the "License");
-   *  you may not use this file except in compliance with the License.
-   *  You may obtain a copy of the License at
-   *
-   *         http://www.apache.org/licenses/LICENSE-2.0
-   *
-   *  Unless required by applicable law or agreed to in writing, software
-   *  distributed under the License is distributed on an "AS IS" BASIS,
-   *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   *  See the License for the specific language governing permissions and
-   *  limitations under the License.
-   *
-   */
-  import { onMounted, ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useRoute } from 'vue-router';
-  import { VueDraggableNext } from 'vue-draggable-next';
-  import { Delete, Rank, Plus } from '@element-plus/icons';
-  import RenderDeviceName from './RenderDeviceName.vue';
-  import RenderStatus from './RenderStatus.vue';
-  import axios from '../http/axios';
-  import Pageable from './Pageable.vue';
+/*
+ *  Copyright (C) [SonicCloudOrg] Sonic Project
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRoute } from 'vue-router';
+import { VueDraggableNext } from 'vue-draggable-next';
+import { Delete, Rank, Plus } from '@element-plus/icons';
+import RenderDeviceName from './RenderDeviceName.vue';
+import RenderStatus from './RenderStatus.vue';
+import axios from '../http/axios';
+import Pageable from './Pageable.vue';
 
-  const route = useRoute();
-  const props = defineProps({
-    suiteId: Number,
-  });
-  const img = import.meta.globEager('./../assets/img/*');
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const getPhoneImg = (name, url) => {
-    let result;
-    if (url === null || !url || (url && url.length === 0)) {
-      result = img['./../assets/img/default.png'].default;
-    } else {
-      result = url;
-    }
-    return result;
-  };
-  const suiteForm = ref(null);
-  const platformList = [
-    { name: '安卓', value: 1, img: 'ANDROID' },
-    { name: 'iOS', value: 2, img: 'IOS' },
-  ];
-  const testSuite = ref({
-    id: null,
-    name: '',
-    platform: null,
-    cover: 1,
-    projectId: route.params.projectId,
-    devices: [],
-    testCases: [],
-  });
-  const deviceData = ref([]);
-  const deviceDataBack = ref([]);
-  const getDevice = () => {
-    axios
-      .get('/controller/devices/listAll', {
-        params: { platform: testSuite.value.platform },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          deviceData.value = resp.data;
-          deviceDataBack.value = resp.data;
-        }
-      });
-  };
-  const tabValue = ref('select');
-  const pageData = ref([]);
-  const name = ref('');
-  const pageSize = ref(10);
-  const getTestCaseList = (pageNum, pSize) => {
-    axios
-      .get('/controller/testCases/list', {
-        params: {
-          platform: testSuite.value.platform,
-          projectId: route.params.projectId,
-          name: name.value,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const addToPublic = (e) => {
-    testSuite.value.testCases.push(e);
-    ElMessage.success({
-      message: '选择成功！已加入到已选用例',
-    });
-  };
-  const removeFromPublic = (e) => {
-    testSuite.value.testCases.splice(e, 1);
-    ElMessage.success({
-      message: '移出成功！',
-    });
-  };
-  const getSource = () => {
-    getDevice();
-    getTestCaseList();
-  };
-  const emit = defineEmits(['flush']);
-  const summit = () => {
-    suiteForm.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/testSuites', testSuite.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            emit('flush');
-          }
-        });
-      }
-    });
-  };
-  const getSuiteInfo = (id) => {
-    axios.get('/controller/testSuites', { params: { id } }).then((resp) => {
+const route = useRoute();
+const props = defineProps({
+  suiteId: Number,
+});
+const img = import.meta.globEager('./../assets/img/*');
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const getPhoneImg = (name, url) => {
+  let result;
+  if (url === null || !url || (url && url.length === 0)) {
+    result = img['./../assets/img/default.png'].default;
+  } else {
+    result = url;
+  }
+  return result;
+};
+const suiteForm = ref(null);
+const platformList = [
+  { name: '安卓', value: 1, img: 'ANDROID' },
+  { name: 'iOS', value: 2, img: 'IOS' },
+];
+const testSuite = ref({
+  id: null,
+  name: '',
+  platform: null,
+  cover: 1,
+  projectId: route.params.projectId,
+  devices: [],
+  testCases: [],
+});
+const deviceData = ref([]);
+const deviceDataBack = ref([]);
+const getDevice = () => {
+  axios
+    .get('/controller/devices/listAll', {
+      params: { platform: testSuite.value.platform },
+    })
+    .then((resp) => {
       if (resp.code === 2000) {
-        testSuite.value = resp.data;
-        if (testSuite.value.platform !== null) {
-          getSource(testSuite.value.platform);
-        }
+        deviceData.value = resp.data;
+        deviceDataBack.value = resp.data;
       }
     });
-  };
-  const filterDevice = (name) => {
-    if (name) {
-      deviceData.value = deviceDataBack.value.filter((item) => {
-        if (
-          (item.model && item.model.indexOf(name) !== -1) ||
-          (item.nickName && item.nickName.indexOf(name) !== -1) ||
-          (item.chiName && item.chiName.indexOf(name) !== -1) ||
-          (item.udId && item.udId.indexOf(name) !== -1)
-        ) {
-          return true;
+};
+const tabValue = ref('select');
+const pageData = ref([]);
+const name = ref('');
+const pageSize = ref(10);
+const getTestCaseList = (pageNum, pSize) => {
+  axios
+    .get('/controller/testCases/list', {
+      params: {
+        platform: testSuite.value.platform,
+        projectId: route.params.projectId,
+        name: name.value,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const addToPublic = (e) => {
+  testSuite.value.testCases.push(e);
+  ElMessage.success({
+    message: '选择成功！已加入到已选用例',
+  });
+};
+const removeFromPublic = (e) => {
+  testSuite.value.testCases.splice(e, 1);
+  ElMessage.success({
+    message: '移出成功！',
+  });
+};
+const getSource = () => {
+  getDevice();
+  getTestCaseList();
+};
+const emit = defineEmits(['flush']);
+const summit = () => {
+  suiteForm.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/testSuites', testSuite.value).then((resp) => {
+        if (resp.code === 2000) {
+          ElMessage.success({
+            message: resp.message,
+          });
+          emit('flush');
         }
       });
-    } else {
-      deviceData.value = deviceDataBack.value;
-    }
-  };
-  onMounted(() => {
-    if (props.suiteId !== 0) {
-      getSuiteInfo(props.suiteId);
     }
   });
+};
+const getSuiteInfo = (id) => {
+  axios.get('/controller/testSuites', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      testSuite.value = resp.data;
+      if (testSuite.value.platform !== null) {
+        getSource(testSuite.value.platform);
+      }
+    }
+  });
+};
+const filterDevice = (name) => {
+  if (name) {
+    deviceData.value = deviceDataBack.value.filter((item) => {
+      if (
+        (item.model && item.model.indexOf(name) !== -1) ||
+        (item.nickName && item.nickName.indexOf(name) !== -1) ||
+        (item.chiName && item.chiName.indexOf(name) !== -1) ||
+        (item.udId && item.udId.indexOf(name) !== -1)
+      ) {
+        return true;
+      }
+    });
+  } else {
+    deviceData.value = deviceDataBack.value;
+  }
+};
+onMounted(() => {
+  if (props.suiteId !== 0) {
+    getSuiteInfo(props.suiteId);
+  }
+});
 </script>
 
 <template>

@@ -1,92 +1,92 @@
 <script setup>
-  import { onMounted, ref, watch } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
-  import StepDraggable from './StepDraggable.vue';
-  import StepUpdate from './StepUpdate.vue';
+import { onMounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
+import StepDraggable from './StepDraggable.vue';
+import StepUpdate from './StepUpdate.vue';
 
-  const steps = ref([]);
-  const props = defineProps({
-    caseId: Number,
-    projectId: Number,
-    platform: Number,
-    isShowRun: Boolean,
-    isDriverFinish: Boolean,
-    debugLoading: Boolean,
-  });
-  const emit = defineEmits(['runStep']);
-  const dialogVisible = ref(false);
-  const stepId = ref(0);
-  const parentId = ref(0);
-  watch(dialogVisible, (newValue, oldValue) => {
-    if (!newValue) {
-      stepId.value = 0;
-      parentId.value = 0;
-    }
-  });
-  const editStep = async (id) => {
-    stepId.value = id;
-    await addStep();
-  };
-  const setParent = (id) => {
-    parentId.value = id;
-  };
-  const addStep = () => {
-    dialogVisible.value = true;
-  };
-  const flush = () => {
-    dialogVisible.value = false;
-    getStepsList();
-  };
-  const deleteStep = (id) => {
-    axios
-      .delete('/controller/steps', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getStepsList();
-        }
-      });
-  };
-  const getStepsList = () => {
-    axios
-      .get('/controller/steps/listAll', {
-        params: {
-          caseId: props.caseId,
-        },
-      })
-      .then((resp) => {
-        steps.value = resp.data;
-      });
-  };
-  const runStep = () => {
-    emit('runStep');
-  };
-  const copyStep = (id) => {
-    axios
-      .get('/controller/steps/copy/steps', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getStepsList();
-        }
-      });
-  };
-  onMounted(() => {
-    getStepsList();
-  });
+const steps = ref([]);
+const props = defineProps({
+  caseId: Number,
+  projectId: Number,
+  platform: Number,
+  isShowRun: Boolean,
+  isDriverFinish: Boolean,
+  debugLoading: Boolean,
+});
+const emit = defineEmits(['runStep']);
+const dialogVisible = ref(false);
+const stepId = ref(0);
+const parentId = ref(0);
+watch(dialogVisible, (newValue, oldValue) => {
+  if (!newValue) {
+    stepId.value = 0;
+    parentId.value = 0;
+  }
+});
+const editStep = async (id) => {
+  stepId.value = id;
+  await addStep();
+};
+const setParent = (id) => {
+  parentId.value = id;
+};
+const addStep = () => {
+  dialogVisible.value = true;
+};
+const flush = () => {
+  dialogVisible.value = false;
+  getStepsList();
+};
+const deleteStep = (id) => {
+  axios
+    .delete('/controller/steps', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getStepsList();
+      }
+    });
+};
+const getStepsList = () => {
+  axios
+    .get('/controller/steps/listAll', {
+      params: {
+        caseId: props.caseId,
+      },
+    })
+    .then((resp) => {
+      steps.value = resp.data;
+    });
+};
+const runStep = () => {
+  emit('runStep');
+};
+const copyStep = (id) => {
+  axios
+    .get('/controller/steps/copy/steps', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getStepsList();
+      }
+    });
+};
+onMounted(() => {
+  getStepsList();
+});
 </script>
 
 <template>

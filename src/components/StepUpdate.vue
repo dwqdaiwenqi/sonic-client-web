@@ -1,737 +1,737 @@
 <script setup>
-  /*
-   *  Copyright (C) [SonicCloudOrg] Sonic Project
-   *
-   *  Licensed under the Apache License, Version 2.0 (the "License");
-   *  you may not use this file except in compliance with the License.
-   *  You may obtain a copy of the License at
-   *
-   *         http://www.apache.org/licenses/LICENSE-2.0
-   *
-   *  Unless required by applicable law or agreed to in writing, software
-   *  distributed under the License is distributed on an "AS IS" BASIS,
-   *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   *  See the License for the specific language governing permissions and
-   *  limitations under the License.
-   *
-   */
-  import { onMounted, ref } from 'vue';
-  import { Tickets, QuestionFilled } from '@element-plus/icons';
-  import { ElMessage } from 'element-plus';
-  import ElementSelect from './ElementSelect.vue';
-  import GlobalParamsSelect from './GlobalParamsSelect.vue';
-  import axios from '../http/axios';
+/*
+ *  Copyright (C) [SonicCloudOrg] Sonic Project
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+import { onMounted, ref } from 'vue';
+import { Tickets, QuestionFilled } from '@element-plus/icons';
+import { ElMessage } from 'element-plus';
+import ElementSelect from './ElementSelect.vue';
+import GlobalParamsSelect from './GlobalParamsSelect.vue';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    projectId: Number,
-    caseId: Number,
-    platform: Number,
-    stepId: Number,
-    parentId: Number,
-  });
-  const selectCondition = (e) => {
-    step.value.stepType = '';
-    step.value.text = '';
-    step.value.elements = [];
-    step.value.content = '';
-    step.value.error = 1;
-    if (e === 3) {
-      step.value.stepType = 'else';
+const props = defineProps({
+  projectId: Number,
+  caseId: Number,
+  platform: Number,
+  stepId: Number,
+  parentId: Number,
+});
+const selectCondition = (e) => {
+  step.value.stepType = '';
+  step.value.text = '';
+  step.value.elements = [];
+  step.value.content = '';
+  step.value.error = 1;
+  if (e === 3) {
+    step.value.stepType = 'else';
+  }
+};
+const step = ref({
+  id: null,
+  caseId: props.caseId,
+  parentId: 0,
+  projectId: props.projectId,
+  platform: props.platform,
+  stepType: '',
+  elements: [],
+  text: '',
+  conditionType: 0,
+  content: '',
+  error: 3,
+});
+const activityList = ref([{ name: '' }]);
+const add = () => {
+  activityList.value.push({ name: '' });
+};
+const delObj = (data) => {
+  if (activityList.value.length === 0) {
+    return;
+  }
+  for (const i in activityList.value) {
+    const item = activityList.value[i];
+    if (item == data) {
+      activityList.value.splice(i, 1);
+      break;
     }
-  };
-  const step = ref({
-    id: null,
-    caseId: props.caseId,
-    parentId: 0,
-    projectId: props.projectId,
-    platform: props.platform,
-    stepType: '',
-    elements: [],
-    text: '',
-    conditionType: 0,
-    content: '',
-    error: 3,
-  });
-  const activityList = ref([{ name: '' }]);
-  const add = () => {
-    activityList.value.push({ name: '' });
-  };
-  const delObj = (data) => {
-    if (activityList.value.length === 0) {
-      return;
+  }
+};
+const monkey = ref({
+  packageName: '',
+  pctNum: 10,
+  options: [
+    {
+      name: 'sleepTime',
+      value: 500,
+    },
+    {
+      name: 'tapEvent',
+      value: 40,
+    },
+    {
+      name: 'longPressEvent',
+      value: 20,
+    },
+    {
+      name: 'swipeEvent',
+      value: 40,
+    },
+    {
+      name: 'zoomEvent',
+      value: 10,
+    },
+    {
+      name: 'systemEvent',
+      value: 5,
+    },
+    {
+      name: 'navEvent',
+      value: 5,
+    },
+    {
+      name: 'isOpenH5Listener',
+      value: true,
+    },
+    {
+      name: 'isOpenPackageListener',
+      value: true,
+    },
+    {
+      name: 'isOpenActivityListener',
+      value: true,
+    },
+    {
+      name: 'isOpenNetworkListener',
+      value: true,
+    },
+  ],
+});
+const monkeyOptions = {
+  sleepTime: {
+    label: '用户操作时延',
+    des: '指定事件间的时延，单位ms',
+  },
+  tapEvent: {
+    label: '轻触事件权重',
+    des: '随机坐标轻触',
+  },
+  longPressEvent: {
+    label: '长按事件权重',
+    des: '随机坐标长按1～3秒',
+  },
+  swipeEvent: {
+    label: '滑动事件权重',
+    des: '随机两个坐标滑动',
+  },
+  zoomEvent: {
+    label: '多点触控事件权重',
+    des: '随机双指放大或缩小',
+  },
+  systemEvent: {
+    label: '物理按键事件权重',
+    des: 'Home、返回、音量控制键等等',
+  },
+  navEvent: {
+    label: '系统导航事件权重',
+    des: '随机开关WIFI、飞行模式、定位',
+  },
+  isOpenH5Listener: {
+    label: 'H5页面监听器',
+    des: '检测是否长时间停留在H5页面',
+  },
+  isOpenPackageListener: {
+    label: '应用包名监听器',
+    des: '检测当前应用是否为被测应用',
+  },
+  isOpenActivityListener: {
+    label: '黑名单Activity监听器',
+    des: '检测当前Activity是否在黑名单内',
+  },
+  isOpenNetworkListener: {
+    label: '网络状态监听器',
+    des: '检测设备是否处于飞行模式和WIFI网络',
+  },
+};
+const stepForm = ref(null);
+const changeType = (e) => {
+  step.value.text = '';
+  step.value.elements = [];
+  step.value.content = '';
+  activityList.value = [{ name: '' }];
+};
+const isShowInputNumber = (data) => {
+  if (
+    data === 'isOpenH5Listener' ||
+    data === 'isOpenPackageListener' ||
+    data === 'isOpenActivityListener' ||
+    data === 'isOpenNetworkListener'
+  ) {
+    return false;
+  }
+  return true;
+};
+const removeEmpty = (data) => {
+  for (const i in data) {
+    const item = data[i];
+    if (item.name === '') {
+      data.splice(i, 1);
     }
-    for (const i in activityList.value) {
-      const item = activityList.value[i];
-      if (item == data) {
-        activityList.value.splice(i, 1);
-        break;
+  }
+};
+const emit = defineEmits(['flush']);
+const summitStep = () => {
+  stepForm.value.validate((valid) => {
+    if (valid) {
+      if (step.value.stepType === 'monkey') {
+        removeEmpty(activityList.value);
+        step.value.text = JSON.stringify(activityList.value);
+        step.value.content = JSON.stringify(monkey.value);
       }
-    }
-  };
-  const monkey = ref({
-    packageName: '',
-    pctNum: 10,
-    options: [
-      {
-        name: 'sleepTime',
-        value: 500,
-      },
-      {
-        name: 'tapEvent',
-        value: 40,
-      },
-      {
-        name: 'longPressEvent',
-        value: 20,
-      },
-      {
-        name: 'swipeEvent',
-        value: 40,
-      },
-      {
-        name: 'zoomEvent',
-        value: 10,
-      },
-      {
-        name: 'systemEvent',
-        value: 5,
-      },
-      {
-        name: 'navEvent',
-        value: 5,
-      },
-      {
-        name: 'isOpenH5Listener',
-        value: true,
-      },
-      {
-        name: 'isOpenPackageListener',
-        value: true,
-      },
-      {
-        name: 'isOpenActivityListener',
-        value: true,
-      },
-      {
-        name: 'isOpenNetworkListener',
-        value: true,
-      },
-    ],
-  });
-  const monkeyOptions = {
-    sleepTime: {
-      label: '用户操作时延',
-      des: '指定事件间的时延，单位ms',
-    },
-    tapEvent: {
-      label: '轻触事件权重',
-      des: '随机坐标轻触',
-    },
-    longPressEvent: {
-      label: '长按事件权重',
-      des: '随机坐标长按1～3秒',
-    },
-    swipeEvent: {
-      label: '滑动事件权重',
-      des: '随机两个坐标滑动',
-    },
-    zoomEvent: {
-      label: '多点触控事件权重',
-      des: '随机双指放大或缩小',
-    },
-    systemEvent: {
-      label: '物理按键事件权重',
-      des: 'Home、返回、音量控制键等等',
-    },
-    navEvent: {
-      label: '系统导航事件权重',
-      des: '随机开关WIFI、飞行模式、定位',
-    },
-    isOpenH5Listener: {
-      label: 'H5页面监听器',
-      des: '检测是否长时间停留在H5页面',
-    },
-    isOpenPackageListener: {
-      label: '应用包名监听器',
-      des: '检测当前应用是否为被测应用',
-    },
-    isOpenActivityListener: {
-      label: '黑名单Activity监听器',
-      des: '检测当前Activity是否在黑名单内',
-    },
-    isOpenNetworkListener: {
-      label: '网络状态监听器',
-      des: '检测设备是否处于飞行模式和WIFI网络',
-    },
-  };
-  const stepForm = ref(null);
-  const changeType = (e) => {
-    step.value.text = '';
-    step.value.elements = [];
-    step.value.content = '';
-    activityList.value = [{ name: '' }];
-  };
-  const isShowInputNumber = (data) => {
-    if (
-      data === 'isOpenH5Listener' ||
-      data === 'isOpenPackageListener' ||
-      data === 'isOpenActivityListener' ||
-      data === 'isOpenNetworkListener'
-    ) {
-      return false;
-    }
-    return true;
-  };
-  const removeEmpty = (data) => {
-    for (const i in data) {
-      const item = data[i];
-      if (item.name === '') {
-        data.splice(i, 1);
-      }
-    }
-  };
-  const emit = defineEmits(['flush']);
-  const summitStep = () => {
-    stepForm.value.validate((valid) => {
-      if (valid) {
-        if (step.value.stepType === 'monkey') {
-          removeEmpty(activityList.value);
-          step.value.text = JSON.stringify(activityList.value);
-          step.value.content = JSON.stringify(monkey.value);
+      axios.put('/controller/steps', step.value).then((resp) => {
+        if (resp.code === 2000) {
+          ElMessage.success({
+            message: resp.message,
+          });
+          emit('flush');
         }
-        axios.put('/controller/steps', step.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            emit('flush');
-          }
-        });
-      }
-    });
-  };
-  const getPublicStepList = () => {
-    axios
-      .get('/controller/publicSteps/findNameByProjectId', {
-        params: {
-          projectId: props.projectId,
-          platform: props.platform,
-        },
-      })
-      .then((resp) => {
-        publicStepList.value = resp.data;
       });
-  };
-  const getStepInfo = (id) => {
-    axios
-      .get('/controller/steps', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        step.value = resp.data;
-        if (
-          step.value.stepType === 'pause' ||
-          step.value.stepType === 'stepHold' ||
-          step.value.stepType === 'longPressPoint' ||
-          step.value.stepType === 'runBack' ||
-          step.value.stepType === 'longPress' ||
-          step.value.stepType === 'checkImage'
-        ) {
+    }
+  });
+};
+const getPublicStepList = () => {
+  axios
+    .get('/controller/publicSteps/findNameByProjectId', {
+      params: {
+        projectId: props.projectId,
+        platform: props.platform,
+      },
+    })
+    .then((resp) => {
+      publicStepList.value = resp.data;
+    });
+};
+const getStepInfo = (id) => {
+  axios
+    .get('/controller/steps', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      step.value = resp.data;
+      if (
+        step.value.stepType === 'pause' ||
+        step.value.stepType === 'stepHold' ||
+        step.value.stepType === 'longPressPoint' ||
+        step.value.stepType === 'runBack' ||
+        step.value.stepType === 'longPress' ||
+        step.value.stepType === 'checkImage'
+      ) {
+        step.value.content = parseInt(step.value.content);
+      }
+      if (step.value.stepType === 'install') {
+        if (step.value.content === '') {
+          step.value.content = 1;
+        } else {
           step.value.content = parseInt(step.value.content);
         }
-        if (step.value.stepType === 'install') {
-          if (step.value.content === '') {
-            step.value.content = 1;
-          } else {
-            step.value.content = parseInt(step.value.content);
-          }
-        }
-        if (step.value.stepType === 'monkey') {
-          monkey.value = JSON.parse(step.value.content);
-          activityList.value = JSON.parse(step.value.text);
-        }
-      });
-  };
-  const publicStepList = ref([]);
-  const options = ref([]);
-  const androidOptions = ref([
-    {
-      label: '设备操作',
-      value: 'system',
-      children: [
-        {
-          value: 'rotateDevice',
-          label: '屏幕交互',
-          children: [
-            {
-              value: 'lock',
-              label: '锁定屏幕',
-            },
-            {
-              value: 'unLock',
-              label: '解锁屏幕',
-            },
-            {
-              value: 'screenSub',
-              label: '左转屏幕',
-            },
-            {
-              value: 'screenAdd',
-              label: '右转屏幕',
-            },
-            {
-              value: 'screenAbort',
-              label: '关闭自动旋转',
-            },
-          ],
-        },
-        {
-          value: 'interaction',
-          label: '物理交互',
-          children: [
-            {
-              value: 'keyCode',
-              label: '系统按键',
-            },
-            {
-              value: 'keyCodeSelf',
-              label: '系统按键（自定义）',
-            },
-            {
-              value: 'hideKey',
-              label: '隐藏键盘',
-            },
-          ],
-        },
-        {
-          value: 'netWork',
-          label: '网络相关',
-          children: [
-            {
-              value: 'airPlaneMode',
-              label: '切换飞行模式',
-            },
-            {
-              value: 'wifiMode',
-              label: '切换WIFI模式',
-            },
-            {
-              value: 'locationMode',
-              label: '切换位置服务',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      label: '触控操作',
-      value: 'action',
-      children: [
-        {
-          value: 'tap',
-          label: '点击坐标',
-        },
-        {
-          value: 'longPressPoint',
-          label: '长按坐标',
-        },
-        {
-          value: 'swipe',
-          label: '滑动拖拽',
-        },
-        {
-          label: '多点触控',
-          value: 'zoom',
-        },
-      ],
-    },
-    {
-      label: '应用操作',
-      value: 'app',
-      children: [
-        {
-          value: 'openApp',
-          label: '打开应用',
-        },
-        {
-          value: 'terminate',
-          label: '终止应用',
-        },
-        {
-          value: 'install',
-          label: '安装应用',
-        },
-        {
-          value: 'uninstall',
-          label: '卸载应用',
-        },
-        {
-          value: 'runBack',
-          label: '后台运行应用',
-        },
-        {
-          value: 'appReset',
-          label: '清空App内存缓存',
-        },
-        {
-          value: 'toWebView',
-          label: '切换WebView',
-        },
-        {
-          value: 'toHandle',
-          label: '切换Handle',
-        },
-      ],
-    },
-    {
-      label: '控件元素操作',
-      value: 'element',
-      children: [
-        {
-          value: 'isExistEle',
-          label: '判断控件元素是否存在',
-        },
-        {
-          value: 'click',
-          label: '点击控件元素',
-        },
-        {
-          value: 'sendKeys',
-          label: '输入文本',
-        },
-        {
-          value: 'sendKeysByActions',
-          label: '输入文本(Actions)',
-        },
-        {
-          value: 'swipe2',
-          label: '拖拽控件元素',
-        },
-        {
-          value: 'longPress',
-          label: '长按控件元素',
-        },
-        {
-          value: 'clear',
-          label: '清空输入框',
-        },
-        {
-          value: 'getTextValue',
-          label: '获取文本',
-        },
-      ],
-    },
-    {
-      label: '验证操作',
-      value: 'check',
-      children: [
-        {
-          value: 'getText',
-          label: '验证文本',
-        },
-        {
-          value: 'getTitle',
-          label: '验证标题',
-        },
-        {
-          value: 'getActivity',
-          label: '验证Activity',
-        },
-        {
-          value: 'getElementAttr',
-          label: '验证元素属性',
-        },
-        {
-          value: 'assert',
-          label: '自定义断言',
-          children: [
-            {
-              value: 'assertEquals',
-              label: '断言验证(相等)',
-            },
-            {
-              value: 'assertTrue',
-              label: '断言验证(包含)',
-            },
-            {
-              value: 'assertNotTrue',
-              label: '断言验证(不包含)',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      label: '图像操作',
-      value: 'img',
-      children: [
-        {
-          value: 'stepScreen',
-          label: '获取截图',
-        },
-        {
-          value: 'checkImage',
-          label: '检测图像相似度',
-        },
-        {
-          value: 'clickByImg',
-          label: '图像定位并点击',
-        },
-        {
-          value: 'readText',
-          label: '图像文字识别（暂时关闭）',
-          disabled: true,
-        },
-      ],
-    },
-    {
-      label: '特殊操作',
-      value: 'spec',
-      children: [
-        {
-          value: 'publicStep',
-          label: '公共步骤',
-        },
-        {
-          value: 'monkey',
-          label: '随机事件',
-        },
-        {
-          value: 'traverse',
-          label: '遍历页面(暂未开放)',
-          disabled: true,
-        },
-        {
-          value: 'stepHold',
-          label: '步骤间隔设置',
-        },
-        {
-          value: 'pause',
-          label: '强制等待',
-        },
-      ],
-    },
-  ]);
-  const iOSOptions = ref([
-    {
-      label: '设备操作',
-      value: 'system',
-      children: [
-        {
-          value: 'rotateDevice',
-          label: '屏幕交互',
-          children: [
-            {
-              value: 'lock',
-              label: '锁定屏幕',
-            },
-            {
-              value: 'unLock',
-              label: '解锁屏幕',
-            },
-          ],
-        },
-        {
-          value: 'specaction',
-          label: '特殊交互',
-          children: [
-            {
-              value: 'siriCommand',
-              label: 'Siri指令',
-            },
-            {
-              value: 'sendKeyForce',
-              label: '键盘输入',
-            },
-          ],
-        },
-        {
-          value: 'interaction',
-          label: '物理交互',
-          children: [
-            {
-              value: 'keyCode',
-              label: '系统按键',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      label: '触控操作',
-      value: 'action',
-      children: [
-        {
-          value: 'tap',
-          label: '点击坐标',
-        },
-        {
-          value: 'longPressPoint',
-          label: '长按坐标',
-        },
-        {
-          value: 'swipe',
-          label: '滑动拖拽',
-        },
-      ],
-    },
-    {
-      label: '应用操作',
-      value: 'app',
-      children: [
-        {
-          value: 'openApp',
-          label: '打开应用',
-        },
-        {
-          value: 'terminate',
-          label: '终止应用',
-        },
-        {
-          value: 'install',
-          label: '安装应用',
-        },
-        {
-          value: 'uninstall',
-          label: '卸载应用',
-        },
-        {
-          value: 'runBack',
-          label: '后台运行应用',
-        },
-      ],
-    },
-    {
-      label: '控件元素操作',
-      value: 'element',
-      children: [
-        {
-          value: 'isExistEle',
-          label: '判断控件元素是否存在',
-        },
-        {
-          value: 'click',
-          label: '点击控件元素',
-        },
-        {
-          value: 'sendKeys',
-          label: '输入文本',
-        },
-        {
-          value: 'swipe2',
-          label: '拖拽控件元素',
-        },
-        {
-          value: 'longPress',
-          label: '长按控件元素',
-        },
-        {
-          value: 'clear',
-          label: '清空输入框',
-        },
-        {
-          value: 'getTextValue',
-          label: '获取文本',
-        },
-      ],
-    },
-    {
-      label: '验证操作',
-      value: 'check',
-      children: [
-        {
-          value: 'getText',
-          label: '验证文本',
-        },
-        {
-          value: 'assert',
-          label: '自定义断言',
-          children: [
-            {
-              value: 'assertEquals',
-              label: '断言验证(相等)',
-            },
-            {
-              value: 'assertTrue',
-              label: '断言验证(包含)',
-            },
-            {
-              value: 'assertNotTrue',
-              label: '断言验证(不包含)',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      label: '图像操作',
-      value: 'img',
-      children: [
-        {
-          value: 'stepScreen',
-          label: '获取截图',
-        },
-        {
-          value: 'checkImage',
-          label: '检测图像相似度',
-        },
-        {
-          value: 'clickByImg',
-          label: '图像定位并点击',
-        },
-        {
-          value: 'readText',
-          label: '图像文字识别（暂时关闭）',
-          disabled: true,
-        },
-      ],
-    },
-    {
-      label: '特殊操作',
-      value: 'spec',
-      children: [
-        {
-          value: 'publicStep',
-          label: '公共步骤',
-        },
-        {
-          value: 'monkey',
-          label: '随机事件(暂未开放)',
-          disabled: true,
-        },
-        {
-          value: 'traverse',
-          label: '遍历页面(暂未开放)',
-          disabled: true,
-        },
-        {
-          value: 'stepHold',
-          label: '步骤间隔设置',
-        },
-        {
-          value: 'pause',
-          label: '强制等待',
-        },
-      ],
-    },
-  ]);
-  onMounted(() => {
-    if (props.platform === 1) {
-      options.value = androidOptions.value;
-    }
-    if (props.platform === 2) {
-      options.value = iOSOptions.value;
-    }
-    if (props.stepId !== 0) {
-      getStepInfo(props.stepId);
-    }
-    if (props.parentId !== 0) {
-      step.value.parentId = props.parentId;
-    }
-    getPublicStepList();
-  });
+      }
+      if (step.value.stepType === 'monkey') {
+        monkey.value = JSON.parse(step.value.content);
+        activityList.value = JSON.parse(step.value.text);
+      }
+    });
+};
+const publicStepList = ref([]);
+const options = ref([]);
+const androidOptions = ref([
+  {
+    label: '设备操作',
+    value: 'system',
+    children: [
+      {
+        value: 'rotateDevice',
+        label: '屏幕交互',
+        children: [
+          {
+            value: 'lock',
+            label: '锁定屏幕',
+          },
+          {
+            value: 'unLock',
+            label: '解锁屏幕',
+          },
+          {
+            value: 'screenSub',
+            label: '左转屏幕',
+          },
+          {
+            value: 'screenAdd',
+            label: '右转屏幕',
+          },
+          {
+            value: 'screenAbort',
+            label: '关闭自动旋转',
+          },
+        ],
+      },
+      {
+        value: 'interaction',
+        label: '物理交互',
+        children: [
+          {
+            value: 'keyCode',
+            label: '系统按键',
+          },
+          {
+            value: 'keyCodeSelf',
+            label: '系统按键（自定义）',
+          },
+          {
+            value: 'hideKey',
+            label: '隐藏键盘',
+          },
+        ],
+      },
+      {
+        value: 'netWork',
+        label: '网络相关',
+        children: [
+          {
+            value: 'airPlaneMode',
+            label: '切换飞行模式',
+          },
+          {
+            value: 'wifiMode',
+            label: '切换WIFI模式',
+          },
+          {
+            value: 'locationMode',
+            label: '切换位置服务',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: '触控操作',
+    value: 'action',
+    children: [
+      {
+        value: 'tap',
+        label: '点击坐标',
+      },
+      {
+        value: 'longPressPoint',
+        label: '长按坐标',
+      },
+      {
+        value: 'swipe',
+        label: '滑动拖拽',
+      },
+      {
+        label: '多点触控',
+        value: 'zoom',
+      },
+    ],
+  },
+  {
+    label: '应用操作',
+    value: 'app',
+    children: [
+      {
+        value: 'openApp',
+        label: '打开应用',
+      },
+      {
+        value: 'terminate',
+        label: '终止应用',
+      },
+      {
+        value: 'install',
+        label: '安装应用',
+      },
+      {
+        value: 'uninstall',
+        label: '卸载应用',
+      },
+      {
+        value: 'runBack',
+        label: '后台运行应用',
+      },
+      {
+        value: 'appReset',
+        label: '清空App内存缓存',
+      },
+      {
+        value: 'toWebView',
+        label: '切换WebView',
+      },
+      {
+        value: 'toHandle',
+        label: '切换Handle',
+      },
+    ],
+  },
+  {
+    label: '控件元素操作',
+    value: 'element',
+    children: [
+      {
+        value: 'isExistEle',
+        label: '判断控件元素是否存在',
+      },
+      {
+        value: 'click',
+        label: '点击控件元素',
+      },
+      {
+        value: 'sendKeys',
+        label: '输入文本',
+      },
+      {
+        value: 'sendKeysByActions',
+        label: '输入文本(Actions)',
+      },
+      {
+        value: 'swipe2',
+        label: '拖拽控件元素',
+      },
+      {
+        value: 'longPress',
+        label: '长按控件元素',
+      },
+      {
+        value: 'clear',
+        label: '清空输入框',
+      },
+      {
+        value: 'getTextValue',
+        label: '获取文本',
+      },
+    ],
+  },
+  {
+    label: '验证操作',
+    value: 'check',
+    children: [
+      {
+        value: 'getText',
+        label: '验证文本',
+      },
+      {
+        value: 'getTitle',
+        label: '验证标题',
+      },
+      {
+        value: 'getActivity',
+        label: '验证Activity',
+      },
+      {
+        value: 'getElementAttr',
+        label: '验证元素属性',
+      },
+      {
+        value: 'assert',
+        label: '自定义断言',
+        children: [
+          {
+            value: 'assertEquals',
+            label: '断言验证(相等)',
+          },
+          {
+            value: 'assertTrue',
+            label: '断言验证(包含)',
+          },
+          {
+            value: 'assertNotTrue',
+            label: '断言验证(不包含)',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: '图像操作',
+    value: 'img',
+    children: [
+      {
+        value: 'stepScreen',
+        label: '获取截图',
+      },
+      {
+        value: 'checkImage',
+        label: '检测图像相似度',
+      },
+      {
+        value: 'clickByImg',
+        label: '图像定位并点击',
+      },
+      {
+        value: 'readText',
+        label: '图像文字识别（暂时关闭）',
+        disabled: true,
+      },
+    ],
+  },
+  {
+    label: '特殊操作',
+    value: 'spec',
+    children: [
+      {
+        value: 'publicStep',
+        label: '公共步骤',
+      },
+      {
+        value: 'monkey',
+        label: '随机事件',
+      },
+      {
+        value: 'traverse',
+        label: '遍历页面(暂未开放)',
+        disabled: true,
+      },
+      {
+        value: 'stepHold',
+        label: '步骤间隔设置',
+      },
+      {
+        value: 'pause',
+        label: '强制等待',
+      },
+    ],
+  },
+]);
+const iOSOptions = ref([
+  {
+    label: '设备操作',
+    value: 'system',
+    children: [
+      {
+        value: 'rotateDevice',
+        label: '屏幕交互',
+        children: [
+          {
+            value: 'lock',
+            label: '锁定屏幕',
+          },
+          {
+            value: 'unLock',
+            label: '解锁屏幕',
+          },
+        ],
+      },
+      {
+        value: 'specaction',
+        label: '特殊交互',
+        children: [
+          {
+            value: 'siriCommand',
+            label: 'Siri指令',
+          },
+          {
+            value: 'sendKeyForce',
+            label: '键盘输入',
+          },
+        ],
+      },
+      {
+        value: 'interaction',
+        label: '物理交互',
+        children: [
+          {
+            value: 'keyCode',
+            label: '系统按键',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: '触控操作',
+    value: 'action',
+    children: [
+      {
+        value: 'tap',
+        label: '点击坐标',
+      },
+      {
+        value: 'longPressPoint',
+        label: '长按坐标',
+      },
+      {
+        value: 'swipe',
+        label: '滑动拖拽',
+      },
+    ],
+  },
+  {
+    label: '应用操作',
+    value: 'app',
+    children: [
+      {
+        value: 'openApp',
+        label: '打开应用',
+      },
+      {
+        value: 'terminate',
+        label: '终止应用',
+      },
+      {
+        value: 'install',
+        label: '安装应用',
+      },
+      {
+        value: 'uninstall',
+        label: '卸载应用',
+      },
+      {
+        value: 'runBack',
+        label: '后台运行应用',
+      },
+    ],
+  },
+  {
+    label: '控件元素操作',
+    value: 'element',
+    children: [
+      {
+        value: 'isExistEle',
+        label: '判断控件元素是否存在',
+      },
+      {
+        value: 'click',
+        label: '点击控件元素',
+      },
+      {
+        value: 'sendKeys',
+        label: '输入文本',
+      },
+      {
+        value: 'swipe2',
+        label: '拖拽控件元素',
+      },
+      {
+        value: 'longPress',
+        label: '长按控件元素',
+      },
+      {
+        value: 'clear',
+        label: '清空输入框',
+      },
+      {
+        value: 'getTextValue',
+        label: '获取文本',
+      },
+    ],
+  },
+  {
+    label: '验证操作',
+    value: 'check',
+    children: [
+      {
+        value: 'getText',
+        label: '验证文本',
+      },
+      {
+        value: 'assert',
+        label: '自定义断言',
+        children: [
+          {
+            value: 'assertEquals',
+            label: '断言验证(相等)',
+          },
+          {
+            value: 'assertTrue',
+            label: '断言验证(包含)',
+          },
+          {
+            value: 'assertNotTrue',
+            label: '断言验证(不包含)',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: '图像操作',
+    value: 'img',
+    children: [
+      {
+        value: 'stepScreen',
+        label: '获取截图',
+      },
+      {
+        value: 'checkImage',
+        label: '检测图像相似度',
+      },
+      {
+        value: 'clickByImg',
+        label: '图像定位并点击',
+      },
+      {
+        value: 'readText',
+        label: '图像文字识别（暂时关闭）',
+        disabled: true,
+      },
+    ],
+  },
+  {
+    label: '特殊操作',
+    value: 'spec',
+    children: [
+      {
+        value: 'publicStep',
+        label: '公共步骤',
+      },
+      {
+        value: 'monkey',
+        label: '随机事件(暂未开放)',
+        disabled: true,
+      },
+      {
+        value: 'traverse',
+        label: '遍历页面(暂未开放)',
+        disabled: true,
+      },
+      {
+        value: 'stepHold',
+        label: '步骤间隔设置',
+      },
+      {
+        value: 'pause',
+        label: '强制等待',
+      },
+    ],
+  },
+]);
+onMounted(() => {
+  if (props.platform === 1) {
+    options.value = androidOptions.value;
+  }
+  if (props.platform === 2) {
+    options.value = iOSOptions.value;
+  }
+  if (props.stepId !== 0) {
+    getStepInfo(props.stepId);
+  }
+  if (props.parentId !== 0) {
+    step.value.parentId = props.parentId;
+  }
+  getPublicStepList();
+});
 </script>
 
 <template>
@@ -1192,7 +1192,7 @@
       >
         <template #title>
           <div>TIPS: 使用Android Driver在Flutter页面输入文本时使用此方式。</div>
-          <div> 需要临时变量或全局变量时，可以添加{{ 变量名 }}的形式。</div>
+          <div>需要临时变量或全局变量时，可以添加{{ 变量名 }}的形式。</div>
         </template>
       </el-alert>
       <element-select
@@ -1564,7 +1564,7 @@
                       :content="monkeyOptions[scope.row.name].des"
                     >
                       <template #reference>
-                        <div> {{ monkeyOptions[scope.row.name].label }}</div>
+                        <div>{{ monkeyOptions[scope.row.name].label }}</div>
                       </template>
                     </el-popover>
                   </template>
@@ -1638,23 +1638,23 @@
         :width="300"
         trigger="hover"
       >
-        <p> 意为该测试步骤关联的逻辑处理 </p>
-        <div
-          ><strong style="color: #409eff">if：</strong
-          >该步骤无异常时，会执行子步骤</div
-        >
-        <div
-          ><strong style="color: #e6a23c">eles if：</strong
-          >如果上一个if条件步骤有异常，则进入该逻辑判断，无异常时会执行子步骤</div
-        >
-        <div
-          ><strong style="color: #f56c6c">else：</strong
-          >如果以上条件全失败，则执行子步骤</div
-        >
-        <div
-          ><strong style="color: #67c23a">while：</strong
-          >如果条件无异常，则重复执行子步骤</div
-        >
+        <p>意为该测试步骤关联的逻辑处理</p>
+        <div>
+          <strong style="color: #409eff">if：</strong
+          >该步骤无异常时，会执行子步骤
+        </div>
+        <div>
+          <strong style="color: #e6a23c">eles if：</strong
+          >如果上一个if条件步骤有异常，则进入该逻辑判断，无异常时会执行子步骤
+        </div>
+        <div>
+          <strong style="color: #f56c6c">else：</strong
+          >如果以上条件全失败，则执行子步骤
+        </div>
+        <div>
+          <strong style="color: #67c23a">while：</strong
+          >如果条件无异常，则重复执行子步骤
+        </div>
         <template #reference>
           <el-icon :size="18" style="vertical-align: middle; margin-left: 10px">
             <QuestionFilled />
@@ -1676,19 +1676,19 @@
           :width="300"
           trigger="hover"
         >
-          <p> 意为该测试步骤出现异常时的处理方案 </p>
-          <div
-            ><strong style="color: #409eff">忽略：</strong
-            >忽略异常并继续执行（逻辑处理时不抛出异常）</div
-          >
-          <div
-            ><strong style="color: #e6a23c">告警：</strong
-            >标记警告并获取异常截图和异常堆栈，然后继续执行（逻辑处理时不抛出异常）</div
-          >
-          <div
-            ><strong style="color: #f56c6c">中断：</strong
-            >标记失败并获取异常截图、异常堆栈和测试录像，然后中断执行（逻辑处理时抛出异常）</div
-          >
+          <p>意为该测试步骤出现异常时的处理方案</p>
+          <div>
+            <strong style="color: #409eff">忽略：</strong
+            >忽略异常并继续执行（逻辑处理时不抛出异常）
+          </div>
+          <div>
+            <strong style="color: #e6a23c">告警：</strong
+            >标记警告并获取异常截图和异常堆栈，然后继续执行（逻辑处理时不抛出异常）
+          </div>
+          <div>
+            <strong style="color: #f56c6c">中断：</strong
+            >标记失败并获取异常截图、异常堆栈和测试录像，然后中断执行（逻辑处理时抛出异常）
+          </div>
           <template #reference>
             <el-icon
               :size="18"

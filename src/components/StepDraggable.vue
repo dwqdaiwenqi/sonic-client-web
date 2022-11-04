@@ -1,102 +1,102 @@
 <script setup>
-  /*
-   *  Copyright (C) [SonicCloudOrg] Sonic Project
-   *
-   *  Licensed under the Apache License, Version 2.0 (the "License");
-   *  you may not use this file except in compliance with the License.
-   *  You may obtain a copy of the License at
-   *
-   *         http://www.apache.org/licenses/LICENSE-2.0
-   *
-   *  Unless required by applicable law or agreed to in writing, software
-   *  distributed under the License is distributed on an "AS IS" BASIS,
-   *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   *  See the License for the specific language governing permissions and
-   *  limitations under the License.
-   *
-   */
-  import { VueDraggableNext } from 'vue-draggable-next';
-  import {
-    Delete,
-    Rank,
-    Edit,
-    DocumentAdd,
-    Minus,
-    CopyDocument,
-  } from '@element-plus/icons';
-  import { ElMessage } from 'element-plus';
-  import StepShow from './StepShow.vue';
-  import axios from '../http/axios';
+/*
+ *  Copyright (C) [SonicCloudOrg] Sonic Project
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+import { VueDraggableNext } from 'vue-draggable-next';
+import {
+  Delete,
+  Rank,
+  Edit,
+  DocumentAdd,
+  Minus,
+  CopyDocument,
+} from '@element-plus/icons';
+import { ElMessage } from 'element-plus';
+import StepShow from './StepShow.vue';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    steps: Array,
-    isEdit: {
-      type: Boolean,
-      default: false,
-    },
-  });
-  const emit = defineEmits([
-    'flush',
-    'editStep',
-    'deleteStep',
-    'setParent',
-    'addStep',
-    'remove',
-    'copyStep',
-  ]);
-  const sortStep = (e) => {
-    if (props.isEdit && props.steps[e.moved.newIndex].parentId === 0) {
-      return;
-    }
-    let startId = null;
-    let endId = null;
-    let direction = '';
-    if (e.moved.newIndex > e.moved.oldIndex) {
-      direction = 'down';
-      endId = props.steps[e.moved.newIndex].sort;
-      startId = props.steps[e.moved.newIndex - 1].sort;
-    } else {
-      direction = 'up';
-      startId = props.steps[e.moved.newIndex].sort;
-      endId = props.steps[e.moved.newIndex + 1].sort;
-    }
-    axios
-      .put('/controller/steps/stepSort', {
-        caseId: props.steps[e.moved.newIndex].caseId,
-        direction,
-        startId,
-        endId,
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          emit('flush');
-        }
-      });
-  };
-  const setParent = (id) => {
-    emit('setParent', id);
-  };
-  const editStep = (id, pId) => {
-    setParent(pId);
-    emit('editStep', id, pId);
-  };
-  const addStep = (pId) => {
-    setParent(pId);
-    emit('addStep', pId);
-  };
-  const deleteStep = (id) => {
-    emit('deleteStep', id);
-  };
-  const remove = (e) => {
-    emit('remove', e);
-  };
+const props = defineProps({
+  steps: Array,
+  isEdit: {
+    type: Boolean,
+    default: false,
+  },
+});
+const emit = defineEmits([
+  'flush',
+  'editStep',
+  'deleteStep',
+  'setParent',
+  'addStep',
+  'remove',
+  'copyStep',
+]);
+const sortStep = (e) => {
+  if (props.isEdit && props.steps[e.moved.newIndex].parentId === 0) {
+    return;
+  }
+  let startId = null;
+  let endId = null;
+  let direction = '';
+  if (e.moved.newIndex > e.moved.oldIndex) {
+    direction = 'down';
+    endId = props.steps[e.moved.newIndex].sort;
+    startId = props.steps[e.moved.newIndex - 1].sort;
+  } else {
+    direction = 'up';
+    startId = props.steps[e.moved.newIndex].sort;
+    endId = props.steps[e.moved.newIndex + 1].sort;
+  }
+  axios
+    .put('/controller/steps/stepSort', {
+      caseId: props.steps[e.moved.newIndex].caseId,
+      direction,
+      startId,
+      endId,
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        emit('flush');
+      }
+    });
+};
+const setParent = (id) => {
+  emit('setParent', id);
+};
+const editStep = (id, pId) => {
+  setParent(pId);
+  emit('editStep', id, pId);
+};
+const addStep = (pId) => {
+  setParent(pId);
+  emit('addStep', pId);
+};
+const deleteStep = (id) => {
+  emit('deleteStep', id);
+};
+const remove = (e) => {
+  emit('remove', e);
+};
 
-  const copyStep = (id) => {
-    emit('copyStep', id);
-  };
+const copyStep = (id) => {
+  emit('copyStep', id);
+};
 </script>
 
 <template>

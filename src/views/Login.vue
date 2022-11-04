@@ -1,90 +1,90 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useRoute, useRouter } from 'vue-router';
-  import { useStore } from 'vuex';
-  import background from '../assets/img/background.svg';
-  import logo from '../assets/img/logo2.png';
-  import logoT from '../assets/logo.png';
-  import axios from '../http/axios';
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import background from '../assets/img/background.svg';
+import logo from '../assets/img/logo2.png';
+import logoT from '../assets/logo.png';
+import axios from '../http/axios';
 
-  const router = useRouter();
-  const route = useRoute();
-  const store = useStore();
-  const user = ref({
-    userName: '',
-    password: '',
+const router = useRouter();
+const route = useRoute();
+const store = useStore();
+const user = ref({
+  userName: '',
+  password: '',
+});
+const register = ref({
+  userName: '',
+  password: '',
+  role: 2,
+});
+const loginForm = ref(null);
+const configLoading = ref(true);
+const config = ref({
+  registerEnable: false,
+  normalEnable: false,
+  ldapEnable: false,
+});
+const getLoginConfig = () => {
+  axios.get('/controller/users/loginConfig').then((resp) => {
+    if (resp.code === 2000) {
+      configLoading.value = false;
+      config.value = resp.data;
+    }
   });
-  const register = ref({
-    userName: '',
-    password: '',
-    role: 2,
+};
+const loginPost = (u) => {
+  loading.value = true;
+  axios.post('/controller/users/login', u).then((resp) => {
+    loading.value = false;
+    if (resp.code === 2000) {
+      store.commit('changeLogin', resp.data);
+      if (route.query.redirect) {
+        const { redirect } = route.query;
+        router.replace(redirect);
+      } else {
+        router.replace({ path: '/' });
+      }
+    }
   });
-  const loginForm = ref(null);
-  const configLoading = ref(true);
-  const config = ref({
-    registerEnable: false,
-    normalEnable: false,
-    ldapEnable: false,
+};
+const login = () => {
+  loginForm.value.validate(async (valid) => {
+    if (valid) {
+      await store.commit('clearAuth');
+      await loginPost(user.value);
+    }
   });
-  const getLoginConfig = () => {
-    axios.get('/controller/users/loginConfig').then((resp) => {
-      if (resp.code === 2000) {
-        configLoading.value = false;
-        config.value = resp.data;
-      }
-    });
-  };
-  const loginPost = (u) => {
-    loading.value = true;
-    axios.post('/controller/users/login', u).then((resp) => {
-      loading.value = false;
-      if (resp.code === 2000) {
-        store.commit('changeLogin', resp.data);
-        if (route.query.redirect) {
-          const { redirect } = route.query;
-          router.replace(redirect);
-        } else {
-          router.replace({ path: '/' });
-        }
-      }
-    });
-  };
-  const login = () => {
-    loginForm.value.validate(async (valid) => {
-      if (valid) {
-        await store.commit('clearAuth');
-        await loginPost(user.value);
-      }
-    });
-  };
-  const registerForm = ref(null);
-  const registerIn = () => {
-    registerForm.value.validate(async (valid) => {
-      if (valid) {
-        await store.commit('clearAuth');
-        loading.value = true;
-        await axios
-          .post('/controller/users/register', register.value)
-          .then((resp) => {
-            loading.value = false;
-            if (resp.code === 2000) {
-              ElMessage.success({
-                message: resp.message,
-              });
-              loginPost({
-                userName: register.value.userName,
-                password: register.value.password,
-              });
-            }
-          });
-      }
-    });
-  };
-  const loading = ref(false);
-  onMounted(() => {
-    getLoginConfig();
+};
+const registerForm = ref(null);
+const registerIn = () => {
+  registerForm.value.validate(async (valid) => {
+    if (valid) {
+      await store.commit('clearAuth');
+      loading.value = true;
+      await axios
+        .post('/controller/users/register', register.value)
+        .then((resp) => {
+          loading.value = false;
+          if (resp.code === 2000) {
+            ElMessage.success({
+              message: resp.message,
+            });
+            loginPost({
+              userName: register.value.userName,
+              password: register.value.password,
+            });
+          }
+        });
+    }
   });
+};
+const loading = ref(false);
+onMounted(() => {
+  getLoginConfig();
+});
 </script>
 
 <template>
@@ -219,32 +219,32 @@
 </template>
 
 <style>
-  .play1 {
-    animation: bounce-down 1.8s linear infinite;
-  }
+.play1 {
+  animation: bounce-down 1.8s linear infinite;
+}
 
-  .play2 {
-    animation: bounce-down 1.6s linear infinite;
-  }
+.play2 {
+  animation: bounce-down 1.6s linear infinite;
+}
 
-  .play3 {
-    animation: bounce-down 1.3s linear infinite;
-  }
+.play3 {
+  animation: bounce-down 1.3s linear infinite;
+}
 
-  .play4 {
-    animation: bounce-down 1.5s linear infinite;
-  }
+.play4 {
+  animation: bounce-down 1.5s linear infinite;
+}
 
-  @-webkit-keyframes bounce-down {
-    25% {
-      -webkit-transform: translateY(-10px);
-    }
-    50%,
-    100% {
-      -webkit-transform: translateY(0);
-    }
-    75% {
-      -webkit-transform: translateY(10px);
-    }
+@-webkit-keyframes bounce-down {
+  25% {
+    -webkit-transform: translateY(-10px);
   }
+  50%,
+  100% {
+    -webkit-transform: translateY(0);
+  }
+  75% {
+    -webkit-transform: translateY(10px);
+  }
+}
 </style>

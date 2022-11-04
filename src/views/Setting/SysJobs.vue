@@ -1,77 +1,77 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import axios from '@/http/axios';
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import axios from '@/http/axios';
 
-  const sysLogs = ref([]);
+const sysLogs = ref([]);
 
-  const dialogVisible = ref(false);
+const dialogVisible = ref(false);
 
-  const findSysJobs = () => {
-    axios.get('/controller/jobs/findSysJobs').then((resp) => {
-      sysLogs.value = resp.data;
-    });
-  };
-
-  const open = (type, cron) => {
-    edit.value = { type, cron };
-    dialogVisible.value = true;
-  };
-
-  const edit = ref({
-    type: '',
-    cron: '',
+const findSysJobs = () => {
+  axios.get('/controller/jobs/findSysJobs').then((resp) => {
+    sysLogs.value = resp.data;
   });
+};
 
-  const updateSysJob = () => {
-    axios.put('/controller/jobs/updateSysJob', edit.value).then((resp) => {
-      if (resp.code === 2000) {
-        dialogVisible.value = false;
-        ElMessage.success({
-          message: resp.message,
-        });
-        findSysJobs();
-      }
-    });
-  };
+const open = (type, cron) => {
+  edit.value = { type, cron };
+  dialogVisible.value = true;
+};
 
-  const getInfo = (type) => {
-    let result = {
-      name: '',
-      des: '',
-    };
-    switch (type) {
-      case 'cleanFile':
-        result = {
-          name: '清理系统文件',
-          des: '清理测试过程产生的图片、录像或远控期间临时apk包等等文件，保留天数为 [前两次定时任务到本次定时任务间隔] 天数。',
-        };
-        break;
-      case 'cleanResult':
-        result = {
-          name: '清理测试报告',
-          des: '清理测试报告，保留天数为 [前两次定时任务到本次定时任务间隔] 天数。',
-        };
-        break;
-      case 'sendDayReport':
-        result = {
-          name: '发送日报',
-          des: '发送测试日报到群机器人。',
-        };
-        break;
-      case 'sendWeekReport':
-        result = {
-          name: '发送周报',
-          des: '发送测试周报到群机器人。',
-        };
-        break;
+const edit = ref({
+  type: '',
+  cron: '',
+});
+
+const updateSysJob = () => {
+  axios.put('/controller/jobs/updateSysJob', edit.value).then((resp) => {
+    if (resp.code === 2000) {
+      dialogVisible.value = false;
+      ElMessage.success({
+        message: resp.message,
+      });
+      findSysJobs();
     }
-    return result;
-  };
-
-  onMounted(() => {
-    findSysJobs();
   });
+};
+
+const getInfo = (type) => {
+  let result = {
+    name: '',
+    des: '',
+  };
+  switch (type) {
+    case 'cleanFile':
+      result = {
+        name: '清理系统文件',
+        des: '清理测试过程产生的图片、录像或远控期间临时apk包等等文件，保留天数为 [前两次定时任务到本次定时任务间隔] 天数。',
+      };
+      break;
+    case 'cleanResult':
+      result = {
+        name: '清理测试报告',
+        des: '清理测试报告，保留天数为 [前两次定时任务到本次定时任务间隔] 天数。',
+      };
+      break;
+    case 'sendDayReport':
+      result = {
+        name: '发送日报',
+        des: '发送测试日报到群机器人。',
+      };
+      break;
+    case 'sendWeekReport':
+      result = {
+        name: '发送周报',
+        des: '发送测试周报到群机器人。',
+      };
+      break;
+  }
+  return result;
+};
+
+onMounted(() => {
+  findSysJobs();
+});
 </script>
 
 <template>

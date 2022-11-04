@@ -1,12 +1,12 @@
 <script setup>
-  import { ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import TestCaseList from '../components/TestCaseList.vue';
+import { ref } from 'vue';
+import { useRoute } from 'vue-router';
+import TestCaseList from '../components/TestCaseList.vue';
 
-  const route = useRoute();
-  const caseList = ref(null);
-  const projectId = ref(parseInt(route.params.projectId));
-  const platform = 1;
+const route = useRoute();
+const caseList = ref(null);
+const projectId = ref(parseInt(route.params.projectId));
+const platform = 1;
 </script>
 
 <template>

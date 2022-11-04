@@ -1,17 +1,17 @@
 <script setup>
-  const props = defineProps({
-    pageSize: Number,
-    currentPage: Number,
-    total: Number,
-    isPageSet: Boolean,
-  });
-  const emit = defineEmits(['change']);
-  const changePage = (num) => {
-    emit('change', num, props.pageSize);
-  };
-  const changeSize = (num) => {
-    emit('change', props.currentPage, num);
-  };
+const props = defineProps({
+  pageSize: Number,
+  currentPage: Number,
+  total: Number,
+  isPageSet: Boolean,
+});
+const emit = defineEmits(['change']);
+const changePage = (num) => {
+  emit('change', num, props.pageSize);
+};
+const changeSize = (num) => {
+  emit('change', props.currentPage, num);
+};
 </script>
 
 <template>

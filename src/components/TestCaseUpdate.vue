@@ -1,102 +1,102 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useStore } from 'vuex';
-  import axios from '../http/axios';
-  import defaultLogo from '../assets/logo.png';
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useStore } from 'vuex';
+import axios from '../http/axios';
+import defaultLogo from '../assets/logo.png';
 
-  const img = import.meta.globEager('./../assets/img/*');
-  const props = defineProps({
-    projectId: Number,
-    platform: Number,
-    caseId: Number,
+const img = import.meta.globEager('./../assets/img/*');
+const props = defineProps({
+  projectId: Number,
+  platform: Number,
+  caseId: Number,
+});
+const store = useStore();
+const testCase = ref({
+  id: null,
+  name: '',
+  platform: props.platform,
+  projectId: props.projectId,
+  moduleId: 0,
+  version: '',
+  designer: '',
+  des: '',
+});
+const moduleList = ref([]);
+const versionList = ref([]);
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const platformList = [
+  { name: '安卓', value: 1, img: 'ANDROID' },
+  { name: 'iOS', value: 2, img: 'IOS' },
+];
+const emit = defineEmits(['flush']);
+const caseForm = ref(null);
+const summit = () => {
+  caseForm.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/testCases', testCase.value).then((resp) => {
+        if (resp.code === 2000) {
+          ElMessage.success({
+            message: resp.message,
+          });
+          emit('flush');
+        }
+      });
+    }
   });
-  const store = useStore();
-  const testCase = ref({
-    id: null,
-    name: '',
-    platform: props.platform,
-    projectId: props.projectId,
-    moduleId: 0,
-    version: '',
-    designer: '',
-    des: '',
+};
+const getCaseInfo = (id) => {
+  axios.get('/controller/testCases', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      testCase.value = resp.data;
+    }
   });
-  const moduleList = ref([]);
-  const versionList = ref([]);
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const platformList = [
-    { name: '安卓', value: 1, img: 'ANDROID' },
-    { name: 'iOS', value: 2, img: 'IOS' },
-  ];
-  const emit = defineEmits(['flush']);
-  const caseForm = ref(null);
-  const summit = () => {
-    caseForm.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/testCases', testCase.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            emit('flush');
-          }
-        });
-      }
-    });
-  };
-  const getCaseInfo = (id) => {
-    axios.get('/controller/testCases', { params: { id } }).then((resp) => {
+};
+const getModuleList = () => {
+  axios
+    .get('/controller/modules/list', {
+      params: { projectId: props.projectId },
+    })
+    .then((resp) => {
       if (resp.code === 2000) {
-        testCase.value = resp.data;
+        moduleList.value = resp.data;
+        moduleList.value.push({ id: 0, name: '无' });
       }
     });
-  };
-  const getModuleList = () => {
+};
+const getVersionList = (e) => {
+  if (e) {
     axios
-      .get('/controller/modules/list', {
+      .get('/controller/versions/list', {
         params: { projectId: props.projectId },
       })
       .then((resp) => {
         if (resp.code === 2000) {
-          moduleList.value = resp.data;
-          moduleList.value.push({ id: 0, name: '无' });
+          versionList.value = resp.data;
         }
       });
-  };
-  const getVersionList = (e) => {
-    if (e) {
-      axios
-        .get('/controller/versions/list', {
-          params: { projectId: props.projectId },
-        })
-        .then((resp) => {
-          if (resp.code === 2000) {
-            versionList.value = resp.data;
-          }
-        });
-    }
-  };
-  onMounted(() => {
-    if (props.caseId !== 0) {
-      getCaseInfo(props.caseId);
-    }
-    getModuleList();
-  });
+  }
+};
+onMounted(() => {
+  if (props.caseId !== 0) {
+    getCaseInfo(props.caseId);
+  }
+  getModuleList();
+});
 </script>
 
 <template>

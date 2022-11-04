@@ -1,90 +1,88 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
 
-  const route = useRoute();
-  const dialogVisible = ref(false);
-  const pageData = ref([]);
-  const updateGlobal = ref(null);
-  const globalParams = ref({
+const route = useRoute();
+const dialogVisible = ref(false);
+const pageData = ref([]);
+const updateGlobal = ref(null);
+const globalParams = ref({
+  id: null,
+  projectId: route.params.projectId,
+  paramsKey: '',
+  paramsValue: '',
+});
+const editGlobalParams = async (id) => {
+  await open();
+  await getGlobalInfo(id);
+};
+const open = () => {
+  globalParams.value = {
     id: null,
     projectId: route.params.projectId,
     paramsKey: '',
     paramsValue: '',
-  });
-  const editGlobalParams = async (id) => {
-    await open();
-    await getGlobalInfo(id);
   };
-  const open = () => {
-    globalParams.value = {
-      id: null,
-      projectId: route.params.projectId,
-      paramsKey: '',
-      paramsValue: '',
-    };
-    dialogVisible.value = true;
-  };
-  const getGlobalParamsList = () => {
-    axios
-      .get('/controller/globalParams/list', {
-        params: {
-          projectId: route.params.projectId,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const getGlobalInfo = (id) => {
-    axios
-      .get('/controller/globalParams', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        globalParams.value = resp.data;
-      });
-  };
-  const deleteGlobal = (id) => {
-    axios
-      .delete('/controller/globalParams', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
+  dialogVisible.value = true;
+};
+const getGlobalParamsList = () => {
+  axios
+    .get('/controller/globalParams/list', {
+      params: {
+        projectId: route.params.projectId,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const getGlobalInfo = (id) => {
+  axios
+    .get('/controller/globalParams', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      globalParams.value = resp.data;
+    });
+};
+const deleteGlobal = (id) => {
+  axios
+    .delete('/controller/globalParams', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getGlobalParamsList();
+      }
+    });
+};
+const summit = () => {
+  updateGlobal.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/globalParams', globalParams.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
+          dialogVisible.value = false;
           getGlobalParamsList();
         }
       });
-  };
-  const summit = () => {
-    updateGlobal.value.validate((valid) => {
-      if (valid) {
-        axios
-          .put('/controller/globalParams', globalParams.value)
-          .then((resp) => {
-            if (resp.code === 2000) {
-              ElMessage.success({
-                message: resp.message,
-              });
-              dialogVisible.value = false;
-              getGlobalParamsList();
-            }
-          });
-      }
-    });
-  };
-  onMounted(() => {
-    getGlobalParamsList();
+    }
   });
+};
+onMounted(() => {
+  getGlobalParamsList();
+});
 </script>
 
 <template>

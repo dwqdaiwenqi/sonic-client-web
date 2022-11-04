@@ -1,126 +1,126 @@
 <script setup>
-  import { ref, onMounted, watch } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useRouter } from 'vue-router';
-  import axios from '../http/axios';
-  import Pageable from './Pageable.vue';
-  import TestCaseUpdate from './TestCaseUpdate.vue';
+import { ref, onMounted, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+import axios from '../http/axios';
+import Pageable from './Pageable.vue';
+import TestCaseUpdate from './TestCaseUpdate.vue';
 
-  const props = defineProps({
-    projectId: Number,
-    platform: Number,
-    isReadOnly: Boolean,
-  });
-  const router = useRouter();
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const name = ref('');
-  const caseId = ref(0);
-  const dialogVisible = ref(false);
-  const tableLoading = ref(false);
-  const moduleIds = ref([]);
-  const getTestCaseList = (pageNum, pSize) => {
-    tableLoading.value = true;
-    axios
-      .get('/controller/testCases/list', {
-        params: {
-          projectId: props.projectId,
-          moduleIds: moduleIds.value.length > 0 ? moduleIds.value : undefined,
-          platform: props.platform,
-          name: name.value,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-        tableLoading.value = false;
-      });
-  };
-  const deleteCase = (id) => {
-    axios
-      .delete('/controller/testCases', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getTestCaseList();
-        }
-      });
-  };
-  const copy = (id) => {
-    axios
-      .get('/controller/testCases/copy', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getTestCaseList();
-        }
-      });
-  };
-  const emit = defineEmits(['selectCase']);
-  const selectCase = (testCase, c, e) => {
-    if (props.isReadOnly) {
-      emit('selectCase', testCase);
-    }
-  };
-  const open = () => {
-    dialogVisible.value = true;
-  };
-  watch(dialogVisible, (newValue, oldValue) => {
-    if (!newValue) {
-      caseId.value = 0;
-    }
-  });
-  watch(
-    () => props.projectId,
-    () => {
-      getTestCaseList();
-    }
-  );
-  const editCase = async (id) => {
-    caseId.value = id;
-    await open();
-  };
-  const flush = () => {
-    dialogVisible.value = false;
+const props = defineProps({
+  projectId: Number,
+  platform: Number,
+  isReadOnly: Boolean,
+});
+const router = useRouter();
+const pageData = ref({});
+const pageSize = ref(15);
+const name = ref('');
+const caseId = ref(0);
+const dialogVisible = ref(false);
+const tableLoading = ref(false);
+const moduleIds = ref([]);
+const getTestCaseList = (pageNum, pSize) => {
+  tableLoading.value = true;
+  axios
+    .get('/controller/testCases/list', {
+      params: {
+        projectId: props.projectId,
+        moduleIds: moduleIds.value.length > 0 ? moduleIds.value : undefined,
+        platform: props.platform,
+        name: name.value,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+      tableLoading.value = false;
+    });
+};
+const deleteCase = (id) => {
+  axios
+    .delete('/controller/testCases', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getTestCaseList();
+      }
+    });
+};
+const copy = (id) => {
+  axios
+    .get('/controller/testCases/copy', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getTestCaseList();
+      }
+    });
+};
+const emit = defineEmits(['selectCase']);
+const selectCase = (testCase, c, e) => {
+  if (props.isReadOnly) {
+    emit('selectCase', testCase);
+  }
+};
+const open = () => {
+  dialogVisible.value = true;
+};
+watch(dialogVisible, (newValue, oldValue) => {
+  if (!newValue) {
+    caseId.value = 0;
+  }
+});
+watch(
+  () => props.projectId,
+  () => {
     getTestCaseList();
-  };
-  const moduleList = ref([]);
-  const getModuleList = () => {
-    axios
-      .get('/controller/modules/list', {
-        params: { projectId: props.projectId },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          resp.data.map((item) => {
-            moduleList.value.push({ text: item.name, value: item.id });
-          });
-          moduleList.value.push({ text: '无', value: 0 });
-        }
-      });
-  };
-  const filter = (e) => {
-    moduleIds.value = e.moduleId;
-    getTestCaseList();
-  };
-  onMounted(() => {
-    getTestCaseList();
-    getModuleList();
-  });
-  defineExpose({ open });
+  }
+);
+const editCase = async (id) => {
+  caseId.value = id;
+  await open();
+};
+const flush = () => {
+  dialogVisible.value = false;
+  getTestCaseList();
+};
+const moduleList = ref([]);
+const getModuleList = () => {
+  axios
+    .get('/controller/modules/list', {
+      params: { projectId: props.projectId },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        resp.data.map((item) => {
+          moduleList.value.push({ text: item.name, value: item.id });
+        });
+        moduleList.value.push({ text: '无', value: 0 });
+      }
+    });
+};
+const filter = (e) => {
+  moduleIds.value = e.moduleId;
+  getTestCaseList();
+};
+onMounted(() => {
+  getTestCaseList();
+  getModuleList();
+});
+defineExpose({ open });
 </script>
 
 <template>

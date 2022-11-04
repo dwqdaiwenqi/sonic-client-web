@@ -1,18 +1,18 @@
 <script setup>
-  import { onMounted } from 'vue';
-  import { useStore } from 'vuex';
-  import { useRoute } from 'vue-router';
-  import Header from '@/components/Header.vue';
-  import defaultLogo from '@/assets/logo.png';
+import { onMounted } from 'vue';
+import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
+import Header from '@/components/Header.vue';
+import defaultLogo from '@/assets/logo.png';
 
-  const store = useStore();
-  const route = useRoute();
-  onMounted(() => {
-    const windowWidth = document.body.clientWidth;
-    if (windowWidth < 1200) {
-      store.commit('autoChangeCollapse');
-    }
-  });
+const store = useStore();
+const route = useRoute();
+onMounted(() => {
+  const windowWidth = document.body.clientWidth;
+  if (windowWidth < 1200) {
+    store.commit('autoChangeCollapse');
+  }
+});
 </script>
 
 <template>

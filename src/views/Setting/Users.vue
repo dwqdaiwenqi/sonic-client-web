@@ -1,88 +1,88 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import axios from '@/http/axios';
-  import Pageable from '@/components/Pageable.vue';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import axios from '@/http/axios';
+import Pageable from '@/components/Pageable.vue';
 
-  const route = useRoute();
+const route = useRoute();
 
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const name = ref('');
-  const dialogVisible = ref(false);
+const pageData = ref({});
+const pageSize = ref(15);
+const name = ref('');
+const dialogVisible = ref(false);
 
-  const state = ref('');
+const state = ref('');
 
-  const userRole = ref({
-    roleId: null,
-    userName: '',
-    id: null,
-  });
+const userRole = ref({
+  roleId: null,
+  userName: '',
+  id: null,
+});
 
-  const open = (row) => {
-    userRole.value = {
-      roleId: row.roleId,
-      userName: row.userName,
-      id: row.id,
-    };
-    state.value = row.roleName;
-    dialogVisible.value = true;
+const open = (row) => {
+  userRole.value = {
+    roleId: row.roleId,
+    userName: row.userName,
+    id: row.id,
   };
+  state.value = row.roleName;
+  dialogVisible.value = true;
+};
 
-  const updateUserRole = (userRole) => {
-    const data = new FormData();
-    data.append('roleId', userRole.roleId);
-    data.append('userId', userRole.id);
-    axios.put('/controller/users/changeRole', data).then((resp) => {
-      if (resp.code === 2000) {
-        dialogVisible.value = false;
-        ElMessage.success({
-          message: resp.message,
-        });
-        getUserList(1);
-      }
+const updateUserRole = (userRole) => {
+  const data = new FormData();
+  data.append('roleId', userRole.roleId);
+  data.append('userId', userRole.id);
+  axios.put('/controller/users/changeRole', data).then((resp) => {
+    if (resp.code === 2000) {
+      dialogVisible.value = false;
+      ElMessage.success({
+        message: resp.message,
+      });
+      getUserList(1);
+    }
+  });
+};
+
+const getRolesList = (queryString, cb) => {
+  axios
+    .get('/controller/roles/list', {
+      params: {
+        page: 1,
+        isAll: true,
+      },
+    })
+    .then((resp) => {
+      cb(resp.data.content);
     });
-  };
+};
 
-  const getRolesList = (queryString, cb) => {
-    axios
-      .get('/controller/roles/list', {
-        params: {
-          page: 1,
-          isAll: true,
-        },
-      })
-      .then((resp) => {
-        cb(resp.data.content);
-      });
-  };
+const handleSelect = async (item) => {
+  userRole.value.roleId = item.id;
+};
 
-  const handleSelect = async (item) => {
-    userRole.value.roleId = item.id;
-  };
+const summit = async () => {
+  await updateUserRole(userRole.value);
+};
 
-  const summit = async () => {
-    await updateUserRole(userRole.value);
-  };
+const getUserList = (pageNum, pSize) => {
+  axios
+    .get('/controller/users/list', {
+      params: {
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+        userName: name.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
 
-  const getUserList = (pageNum, pSize) => {
-    axios
-      .get('/controller/users/list', {
-        params: {
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-          userName: name.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-
-  onMounted(() => {
-    getUserList();
-  });
+onMounted(() => {
+  getUserList();
+});
 </script>
 
 <template>

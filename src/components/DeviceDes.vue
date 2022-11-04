@@ -1,136 +1,136 @@
 <script setup>
-  import { useI18n } from 'vue-i18n';
-  import { ElMessage } from 'element-plus';
-  import { useRouter } from 'vue-router';
-  import RenderStatus from './RenderStatus.vue';
-  import RenderDeviceName from './RenderDeviceName.vue';
-  import axios from '../http/axios';
-  import ColorImg from '@/components/ColorImg.vue';
+import { useI18n } from 'vue-i18n';
+import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
+import ColorImg from '@/components/ColorImg.vue';
+import RenderStatus from './RenderStatus.vue';
+import RenderDeviceName from './RenderDeviceName.vue';
+import axios from '../http/axios';
 
-  const router = useRouter();
-  const { t: $t } = useI18n();
-  const img = import.meta.globEager('./../assets/img/*');
-  const props = defineProps({
-    device: Object,
-    agentList: Array,
-    detail: {
-      type: Boolean,
-      default: false,
-    },
+const router = useRouter();
+const { t: $t } = useI18n();
+const img = import.meta.globEager('./../assets/img/*');
+const props = defineProps({
+  device: Object,
+  agentList: Array,
+  detail: {
+    type: Boolean,
+    default: false,
+  },
+});
+const emit = defineEmits(['flush']);
+const upload = (content) => {
+  const formData = new FormData();
+  formData.append('file', content.file);
+  formData.append('type', 'keepFiles');
+  axios
+    .post('/folder/upload', formData, {
+      headers: { 'Content-type': 'multipart/form-data' },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        updateImg(content.data.id, resp.data);
+      }
+    });
+};
+const beforeAvatarUpload = (file) => {
+  if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
+    return true;
+  }
+  ElMessage.error({
+    message: $t('dialog.suffixError'),
   });
-  const emit = defineEmits(['flush']);
-  const upload = (content) => {
-    const formData = new FormData();
-    formData.append('file', content.file);
-    formData.append('type', 'keepFiles');
-    axios
-      .post('/folder/upload', formData, {
-        headers: { 'Content-type': 'multipart/form-data' },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          updateImg(content.data.id, resp.data);
-        }
+  return false;
+};
+const updateImg = (id, imgUrl) => {
+  axios.put('/controller/devices/updateImg', { id, imgUrl }).then((resp) => {
+    if (resp.code === 2000) {
+      ElMessage.success({
+        message: resp.message,
       });
-  };
-  const beforeAvatarUpload = (file) => {
-    if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
-      return true;
+      emit('flush');
     }
-    ElMessage.error({
-      message: $t('dialog.suffixError'),
-    });
-    return false;
-  };
-  const updateImg = (id, imgUrl) => {
-    axios.put('/controller/devices/updateImg', { id, imgUrl }).then((resp) => {
-      if (resp.code === 2000) {
-        ElMessage.success({
-          message: resp.message,
-        });
-        emit('flush');
-      }
-    });
-  };
-  const saveDetail = (device) => {
-    axios
-      .put('/controller/devices/saveDetail', {
-        id: device.id,
-        password: device.password,
-        nickName: device.nickName,
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-        }
-      });
-  };
-  const deleteDevice = (id) => {
-    axios.delete('/controller/devices', { params: { id } }).then((resp) => {
-      if (resp.code === 2000) {
-        ElMessage.success({
-          message: resp.message,
-        });
-        emit('flush');
-      }
-    });
-  };
-  const jump = (id, platform) => {
-    if (platform === 1) {
-      router.push({
-        path: `AndroidRemote/${id}`,
-      });
-    } else {
-      router.push({
-        path: `IOSRemote/${id}`,
-      });
-    }
-  };
-  const reboot = (id) => {
-    axios.get('/transport/exchange/reboot', { params: { id } }).then((resp) => {
+  });
+};
+const saveDetail = (device) => {
+  axios
+    .put('/controller/devices/saveDetail', {
+      id: device.id,
+      password: device.password,
+      nickName: device.nickName,
+    })
+    .then((resp) => {
       if (resp.code === 2000) {
         ElMessage.success({
           message: resp.message,
         });
       }
     });
-  };
-  const getPhoneImg = (name, url) => {
-    let result;
-    if (url === null || !url || (url && url.length === 0)) {
-      result = img['./../assets/img/default.png'].default;
-    } else {
-      result = url;
+};
+const deleteDevice = (id) => {
+  axios.delete('/controller/devices', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      ElMessage.success({
+        message: resp.message,
+      });
+      emit('flush');
     }
-    return result;
-  };
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
+  });
+};
+const jump = (id, platform) => {
+  if (platform === 1) {
+    router.push({
+      path: `AndroidRemote/${id}`,
+    });
+  } else {
+    router.push({
+      path: `IOSRemote/${id}`,
+    });
+  }
+};
+const reboot = (id) => {
+  axios.get('/transport/exchange/reboot', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      ElMessage.success({
+        message: resp.message,
+      });
     }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
+  });
+};
+const getPhoneImg = (name, url) => {
+  let result;
+  if (url === null || !url || (url && url.length === 0)) {
+    result = img['./../assets/img/default.png'].default;
+  } else {
+    result = url;
+  }
+  return result;
+};
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const findAgentById = (id) => {
+  let result = $t('form.unknown');
+  for (const i in props.agentList) {
+    if (props.agentList[i].id === id) {
+      result = props.agentList[i].name;
+      break;
     }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const findAgentById = (id) => {
-    let result = $t('form.unknown');
-    for (const i in props.agentList) {
-      if (props.agentList[i].id === id) {
-        result = props.agentList[i].name;
-        break;
-      }
-    }
-    return result;
-  };
+  }
+  return result;
+};
 </script>
 
 <template>
@@ -163,7 +163,7 @@
           style="margin: 0 0 15px 10px"
         >
           <el-form-item v-if="!detail" :label="$t('devices.form.model')">
-            <div>{{ device.model }} </div>
+            <div>{{ device.model }}</div>
           </el-form-item>
           <el-form-item :label="$t('devices.form.manufacturer')">
             <img

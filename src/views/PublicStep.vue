@@ -1,82 +1,82 @@
 <script setup>
-  import { onMounted, ref, watch } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import PublicStepUpdate from '../components/PublicStepUpdate.vue';
-  import Pageable from '../components/Pageable.vue';
-  import axios from '../http/axios';
-  import StepShow from '../components/StepShow.vue';
+import { onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import PublicStepUpdate from '../components/PublicStepUpdate.vue';
+import Pageable from '../components/Pageable.vue';
+import axios from '../http/axios';
+import StepShow from '../components/StepShow.vue';
 
-  const route = useRoute();
-  const dialogVisible = ref(false);
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const publicStepId = ref(0);
-  watch(dialogVisible, (newValue, oldValue) => {
-    if (!newValue) {
-      publicStepId.value = 0;
-    }
-  });
-  const editPublicStep = async (id) => {
-    publicStepId.value = id;
-    await open();
-  };
-  const open = () => {
-    dialogVisible.value = true;
-  };
-  const flush = (e) => {
-    if (e) {
-      dialogVisible.value = false;
-    }
-    getPublicStepList();
-  };
-  const getPublicStepList = (pageNum, pSize) => {
-    axios
-      .get('/controller/publicSteps/list', {
-        params: {
-          projectId: route.params.projectId,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  // 复制该公共步骤
-  // const copyPublicStepId = (id) => {
-  //   axios.get("/controller/publicSteps/copy", {
-  //     params: {
-  //       id
-  //     }
-  //   }).then(resp => {
-  //     if (resp['code'] === 2000) {
-  //       ElMessage.success({
-  //         message: resp['message']
-  //       });
-  //       getPublicStepList()
-  //     }
-  //   })
-  // }
-  const deletePublicStep = (id) => {
-    axios
-      .delete('/controller/publicSteps', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getPublicStepList();
-        }
-      });
-  };
-  onMounted(() => {
-    getPublicStepList();
-  });
+const route = useRoute();
+const dialogVisible = ref(false);
+const pageData = ref({});
+const pageSize = ref(15);
+const publicStepId = ref(0);
+watch(dialogVisible, (newValue, oldValue) => {
+  if (!newValue) {
+    publicStepId.value = 0;
+  }
+});
+const editPublicStep = async (id) => {
+  publicStepId.value = id;
+  await open();
+};
+const open = () => {
+  dialogVisible.value = true;
+};
+const flush = (e) => {
+  if (e) {
+    dialogVisible.value = false;
+  }
+  getPublicStepList();
+};
+const getPublicStepList = (pageNum, pSize) => {
+  axios
+    .get('/controller/publicSteps/list', {
+      params: {
+        projectId: route.params.projectId,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+// 复制该公共步骤
+// const copyPublicStepId = (id) => {
+//   axios.get("/controller/publicSteps/copy", {
+//     params: {
+//       id
+//     }
+//   }).then(resp => {
+//     if (resp['code'] === 2000) {
+//       ElMessage.success({
+//         message: resp['message']
+//       });
+//       getPublicStepList()
+//     }
+//   })
+// }
+const deletePublicStep = (id) => {
+  axios
+    .delete('/controller/publicSteps', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getPublicStepList();
+      }
+    });
+};
+onMounted(() => {
+  getPublicStepList();
+});
 </script>
 
 <template>

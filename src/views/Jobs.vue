@@ -1,134 +1,134 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
-  import Pageable from '../components/Pageable.vue';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
+import Pageable from '../components/Pageable.vue';
 
-  const route = useRoute();
-  const dialogVisible = ref(false);
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const updateJob = ref(null);
-  const testSuiteList = ref([]);
-  const dialogCron = ref(false);
-  const jobs = ref({
+const route = useRoute();
+const dialogVisible = ref(false);
+const pageData = ref({});
+const pageSize = ref(15);
+const updateJob = ref(null);
+const testSuiteList = ref([]);
+const dialogCron = ref(false);
+const jobs = ref({
+  id: null,
+  projectId: route.params.projectId,
+  name: '',
+  suiteId: null,
+  cronExpression: '',
+});
+const editJobs = async (id) => {
+  await open();
+  await getJobInfo(id);
+};
+const open = () => {
+  jobs.value = {
     id: null,
     projectId: route.params.projectId,
     name: '',
     suiteId: null,
     cronExpression: '',
-  });
-  const editJobs = async (id) => {
-    await open();
-    await getJobInfo(id);
   };
-  const open = () => {
-    jobs.value = {
-      id: null,
-      projectId: route.params.projectId,
-      name: '',
-      suiteId: null,
-      cronExpression: '',
-    };
-    dialogVisible.value = true;
-  };
-  const getJobsList = (pageNum, pSize) => {
-    axios
-      .get('/controller/jobs/list', {
-        params: {
-          projectId: route.params.projectId,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const getJobInfo = (id) => {
-    axios
-      .get('/controller/jobs', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        jobs.value = resp.data;
-      });
-  };
-  const updateStatus = (id, type) => {
-    axios
-      .get('/controller/jobs/updateStatus', {
-        params: {
-          id,
-          type,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-        }
-      });
-  };
-  const getSuiteList = () => {
-    axios
-      .get('/controller/testSuites/listAll', {
-        params: {
-          projectId: route.params.projectId,
-        },
-      })
-      .then((resp) => {
-        testSuiteList.value = resp.data;
-      });
-  };
-  const deleteJob = (id) => {
-    axios
-      .delete('/controller/jobs', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getJobsList();
-        }
-      });
-  };
-  const getSuiteName = (id) => {
-    let name = '';
-    for (const i in testSuiteList.value) {
-      if (testSuiteList.value[i].id === id) {
-        name = testSuiteList.value[i].name;
-        break;
-      }
-    }
-    return name;
-  };
-  const summit = () => {
-    updateJob.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/jobs', jobs.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            dialogVisible.value = false;
-            getJobsList();
-          }
+  dialogVisible.value = true;
+};
+const getJobsList = (pageNum, pSize) => {
+  axios
+    .get('/controller/jobs/list', {
+      params: {
+        projectId: route.params.projectId,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const getJobInfo = (id) => {
+  axios
+    .get('/controller/jobs', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      jobs.value = resp.data;
+    });
+};
+const updateStatus = (id, type) => {
+  axios
+    .get('/controller/jobs/updateStatus', {
+      params: {
+        id,
+        type,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
         });
       }
     });
-  };
-  onMounted(() => {
-    getJobsList();
-    getSuiteList();
+};
+const getSuiteList = () => {
+  axios
+    .get('/controller/testSuites/listAll', {
+      params: {
+        projectId: route.params.projectId,
+      },
+    })
+    .then((resp) => {
+      testSuiteList.value = resp.data;
+    });
+};
+const deleteJob = (id) => {
+  axios
+    .delete('/controller/jobs', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getJobsList();
+      }
+    });
+};
+const getSuiteName = (id) => {
+  let name = '';
+  for (const i in testSuiteList.value) {
+    if (testSuiteList.value[i].id === id) {
+      name = testSuiteList.value[i].name;
+      break;
+    }
+  }
+  return name;
+};
+const summit = () => {
+  updateJob.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/jobs', jobs.value).then((resp) => {
+        if (resp.code === 2000) {
+          ElMessage.success({
+            message: resp.message,
+          });
+          dialogVisible.value = false;
+          getJobsList();
+        }
+      });
+    }
   });
+};
+onMounted(() => {
+  getJobsList();
+  getSuiteList();
+});
 </script>
 
 <template>

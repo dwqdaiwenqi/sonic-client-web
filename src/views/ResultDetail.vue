@@ -1,462 +1,462 @@
 <script setup>
-  import { useRoute, useRouter } from 'vue-router';
-  import { nextTick, onMounted, onUnmounted, ref, reactive } from 'vue';
-  import StepLog from '../components/StepLog.vue';
-  import 'vue3-video-play/dist/style.css';
-  import { videoPlay } from 'vue3-video-play';
-  import * as echarts from 'echarts/core';
-  import {
-    TitleComponent,
-    ToolboxComponent,
-    TooltipComponent,
-    GridComponent,
-    LegendComponent,
-  } from 'echarts/components';
-  import { LineChart, PieChart } from 'echarts/charts';
-  import { CanvasRenderer } from 'echarts/renderers';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
+import { useRoute, useRouter } from 'vue-router';
+import { nextTick, onMounted, onUnmounted, ref, reactive } from 'vue';
+import StepLog from '../components/StepLog.vue';
+import 'vue3-video-play/dist/style.css';
+import { videoPlay } from 'vue3-video-play';
+import * as echarts from 'echarts/core';
+import {
+  TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+} from 'echarts/components';
+import { LineChart, PieChart } from 'echarts/charts';
+import { CanvasRenderer } from 'echarts/renderers';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
 
-  echarts.use([
-    PieChart,
-    ToolboxComponent,
-    GridComponent,
-    LegendComponent,
-    LineChart,
-    CanvasRenderer,
-    TitleComponent,
-    TooltipComponent,
-  ]);
-  const router = useRouter();
-  const route = useRoute();
-  const results = ref({});
-  const testCaseList = ref([]);
-  const deviceList = ref([]);
-  const caseId = ref(0);
-  const deviceId = ref('');
-  const stepList = ref([]);
-  const done = ref(false);
-  const stepLoading = ref(false);
-  const type = ref('log');
-  const recordUrl = ref('');
-  const videoOptions = reactive({
-    width: '48%',
-    height: 'auto',
-    controlBtns: ['audioTrack', 'quality', 'volume', 'fullScreen', 'speedRate'],
-  });
-  let page = 1;
-  let resizeFun;
-  let resizeChart;
-  const subTime = (date1, date2) => {
-    let data = (new Date(date2) - new Date(date1)) / 1000;
-    let time = '';
-    const days = parseInt(data / 86400);
-    data %= 86400;
-    const hours = parseInt(data / 3600);
-    data %= 3600;
-    const minutes = parseInt(data / 60);
-    data %= 60;
-    if (days > 0) {
-      time = `${days}天${hours}小时${minutes}分${data}秒`;
-    } else {
-      time = `${hours}小时${minutes}分${data}秒`;
-    }
-    return time;
-  };
-  const changeCase = (e) => {
-    if (e !== '') {
-      page = 1;
-      done.value = false;
-      stepList.value = [];
-      type.value = 'log';
-      deviceList.value = [];
-      for (const i in testCaseList.value) {
-        if (testCaseList.value[i].case.id === e) {
-          getDeviceList(testCaseList.value[i].device);
-          break;
-        }
-      }
-    }
-  };
-  const switchType = (e) => {
-    if (e.props.name === 'perform') {
-      nextTick(() => {
-        getPerform(caseId.value, deviceId.value);
-      });
-    }
-    if (e.props.name === 'record') {
-      nextTick(() => {
-        getRecord();
-      });
-    }
-  };
-  const getRecord = () => {
-    recordUrl.value = '';
-    axios
-      .get('/controller/resultDetail/listAll', {
-        params: {
-          caseId: caseId.value,
-          resultId: route.params.resultId,
-          deviceId: deviceId.value,
-          type: 'record',
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000 && resp.data.length > 0) {
-          recordUrl.value = resp.data[0].log;
-        }
-      });
-  };
-  const getLegend = (data) => {
-    const result = [];
-    if (data.length > 0) {
-      for (const k in JSON.parse(data[0].log)) {
-        result.push(k);
-      }
-    }
-    return result;
-  };
-  const getSeries = (data, legend) => {
-    const result = [];
-    if (data.length > 0 && legend.length > 0) {
-      for (const j in legend) {
-        const d = [];
-        for (const i in data) {
-          for (const k in JSON.parse(data[i].log)) {
-            if (k === legend[j]) {
-              d.push(JSON.parse(data[i].log)[k]);
-            }
-          }
-        }
-        result.push({
-          name: legend[j],
-          type: 'line',
-          areaStyle: {},
-          data: d,
-        });
-      }
-    }
-    return result;
-  };
-  const getTimes = (data) => {
-    const result = [];
-    for (const i in data) {
-      result.push(data[i].time);
-    }
-    return result;
-  };
-  const getPerform = (cid, did) => {
-    let mem = echarts.getInstanceByDom(
-      document.getElementById(`mem${cid}${did}`)
-    );
-    if (mem == null) {
-      mem = echarts.init(document.getElementById(`mem${cid}${did}`));
-    }
-    let bat = echarts.getInstanceByDom(
-      document.getElementById(`bat${cid}${did}`)
-    );
-    if (bat == null) {
-      bat = echarts.init(document.getElementById(`bat${cid}${did}`));
-    }
-    const option = {
-      title: {
-        textStyle: {
-          color: '#606266',
-        },
-        x: 'center',
-        y: 'top',
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'cross',
-          label: {
-            backgroundColor: '#6a7985',
-          },
-        },
-      },
-      toolbox: {
-        feature: {
-          saveAsImage: { show: true, title: '保存' },
-        },
-      },
-      xAxis: [
-        {
-          type: 'category',
-          boundaryGap: false,
-          axisTick: {
-            inside: true,
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#909399',
-              shadowBlur: 2.5,
-            },
-          },
-          axisLabel: {
-            interval: 0,
-            rotate: 40,
-          },
-        },
-      ],
-      legend: {
-        top: '8%',
-        textStyle: {
-          color: '#606266',
-        },
-      },
-      grid: {
-        top: '24%',
-        left: '3%',
-        right: '4%',
-        bottom: '10%',
-        containLabel: true,
-      },
-      yAxis: [
-        {
-          type: 'value',
-          axisTick: {
-            inside: true,
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#909399',
-              shadowBlur: 2.5,
-            },
-          },
-        },
-      ],
-    };
-    mem.showLoading();
-    bat.showLoading();
-    axios
-      .get('/controller/resultDetail/listAll', {
-        params: {
-          caseId: caseId.value,
-          resultId: route.params.resultId,
-          deviceId: deviceId.value,
-          type: 'perform',
-        },
-      })
-      .then(async (resp) => {
-        if (resp.code === 2000 && resp.data.length > 0) {
-          mem.hideLoading();
-          bat.hideLoading();
-          const memList = [];
-          const batList = [];
-          for (const i in resp.data) {
-            if (resp.data[i].status === 1) {
-              memList.push(resp.data[i]);
-            }
-            if (resp.data[i].status === 2) {
-              batList.push(resp.data[i]);
-            }
-          }
-          const memLegend = getLegend(memList);
-          const memData = getSeries(memList, memLegend);
-          mem.setOption({
-            title: { text: '内存详情' },
-            series: memData,
-            legend: {
-              data: memLegend,
-            },
-            xAxis: [
-              {
-                data: getTimes(memList),
-              },
-            ],
-            yAxis: [{ name: '单位(KB)' }],
-          });
-          mem.setOption(option);
-          const batLegend = getLegend(batList);
-          const batData = getSeries(batList, batLegend);
-          bat.setOption({
-            title: { text: '电量详情' },
-            series: batData,
-            legend: {
-              data: batLegend,
-            },
-            xAxis: [
-              {
-                data: getTimes(batList),
-              },
-            ],
-            yAxis: [{ name: '单位(%)', max: 100, min: 0 }],
-          });
-          bat.setOption(option);
-          if (resizeFun !== undefined) {
-            window.removeEventListener('resize', resizeFun);
-          }
-          resizeFun = () => {
-            mem.resize();
-            bat.resize();
-          };
-          window.addEventListener('resize', resizeFun);
-        } else {
-          mem.showLoading({
-            text: '内存数据不足',
-            fontSize: 20,
-            textColor: '#606266',
-            showSpinner: false,
-          });
-          bat.showLoading({
-            text: '电量数据不足',
-            fontSize: 20,
-            textColor: '#606266',
-            showSpinner: false,
-          });
-          ElMessage.info({
-            message: '性能数据不足！',
-          });
-        }
-      });
-  };
-  const switchDevice = async (e) => {
+echarts.use([
+  PieChart,
+  ToolboxComponent,
+  GridComponent,
+  LegendComponent,
+  LineChart,
+  CanvasRenderer,
+  TitleComponent,
+  TooltipComponent,
+]);
+const router = useRouter();
+const route = useRoute();
+const results = ref({});
+const testCaseList = ref([]);
+const deviceList = ref([]);
+const caseId = ref(0);
+const deviceId = ref('');
+const stepList = ref([]);
+const done = ref(false);
+const stepLoading = ref(false);
+const type = ref('log');
+const recordUrl = ref('');
+const videoOptions = reactive({
+  width: '48%',
+  height: 'auto',
+  controlBtns: ['audioTrack', 'quality', 'volume', 'fullScreen', 'speedRate'],
+});
+let page = 1;
+let resizeFun;
+let resizeChart;
+const subTime = (date1, date2) => {
+  let data = (new Date(date2) - new Date(date1)) / 1000;
+  let time = '';
+  const days = parseInt(data / 86400);
+  data %= 86400;
+  const hours = parseInt(data / 3600);
+  data %= 3600;
+  const minutes = parseInt(data / 60);
+  data %= 60;
+  if (days > 0) {
+    time = `${days}天${hours}小时${minutes}分${data}秒`;
+  } else {
+    time = `${hours}小时${minutes}分${data}秒`;
+  }
+  return time;
+};
+const changeCase = (e) => {
+  if (e !== '') {
     page = 1;
     done.value = false;
     stepList.value = [];
     type.value = 'log';
-    await getStepList();
+    deviceList.value = [];
+    for (const i in testCaseList.value) {
+      if (testCaseList.value[i].case.id === e) {
+        getDeviceList(testCaseList.value[i].device);
+        break;
+      }
+    }
+  }
+};
+const switchType = (e) => {
+  if (e.props.name === 'perform') {
+    nextTick(() => {
+      getPerform(caseId.value, deviceId.value);
+    });
+  }
+  if (e.props.name === 'record') {
+    nextTick(() => {
+      getRecord();
+    });
+  }
+};
+const getRecord = () => {
+  recordUrl.value = '';
+  axios
+    .get('/controller/resultDetail/listAll', {
+      params: {
+        caseId: caseId.value,
+        resultId: route.params.resultId,
+        deviceId: deviceId.value,
+        type: 'record',
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000 && resp.data.length > 0) {
+        recordUrl.value = resp.data[0].log;
+      }
+    });
+};
+const getLegend = (data) => {
+  const result = [];
+  if (data.length > 0) {
+    for (const k in JSON.parse(data[0].log)) {
+      result.push(k);
+    }
+  }
+  return result;
+};
+const getSeries = (data, legend) => {
+  const result = [];
+  if (data.length > 0 && legend.length > 0) {
+    for (const j in legend) {
+      const d = [];
+      for (const i in data) {
+        for (const k in JSON.parse(data[i].log)) {
+          if (k === legend[j]) {
+            d.push(JSON.parse(data[i].log)[k]);
+          }
+        }
+      }
+      result.push({
+        name: legend[j],
+        type: 'line',
+        areaStyle: {},
+        data: d,
+      });
+    }
+  }
+  return result;
+};
+const getTimes = (data) => {
+  const result = [];
+  for (const i in data) {
+    result.push(data[i].time);
+  }
+  return result;
+};
+const getPerform = (cid, did) => {
+  let mem = echarts.getInstanceByDom(
+    document.getElementById(`mem${cid}${did}`)
+  );
+  if (mem == null) {
+    mem = echarts.init(document.getElementById(`mem${cid}${did}`));
+  }
+  let bat = echarts.getInstanceByDom(
+    document.getElementById(`bat${cid}${did}`)
+  );
+  if (bat == null) {
+    bat = echarts.init(document.getElementById(`bat${cid}${did}`));
+  }
+  const option = {
+    title: {
+      textStyle: {
+        color: '#606266',
+      },
+      x: 'center',
+      y: 'top',
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985',
+        },
+      },
+    },
+    toolbox: {
+      feature: {
+        saveAsImage: { show: true, title: '保存' },
+      },
+    },
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        axisTick: {
+          inside: true,
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#909399',
+            shadowBlur: 2.5,
+          },
+        },
+        axisLabel: {
+          interval: 0,
+          rotate: 40,
+        },
+      },
+    ],
+    legend: {
+      top: '8%',
+      textStyle: {
+        color: '#606266',
+      },
+    },
+    grid: {
+      top: '24%',
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      containLabel: true,
+    },
+    yAxis: [
+      {
+        type: 'value',
+        axisTick: {
+          inside: true,
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#909399',
+            shadowBlur: 2.5,
+          },
+        },
+      },
+    ],
   };
-  const loadMore = () => {
-    page++;
-    getStepList();
-  };
-  const getStepList = () => {
-    stepLoading.value = true;
+  mem.showLoading();
+  bat.showLoading();
+  axios
+    .get('/controller/resultDetail/listAll', {
+      params: {
+        caseId: caseId.value,
+        resultId: route.params.resultId,
+        deviceId: deviceId.value,
+        type: 'perform',
+      },
+    })
+    .then(async (resp) => {
+      if (resp.code === 2000 && resp.data.length > 0) {
+        mem.hideLoading();
+        bat.hideLoading();
+        const memList = [];
+        const batList = [];
+        for (const i in resp.data) {
+          if (resp.data[i].status === 1) {
+            memList.push(resp.data[i]);
+          }
+          if (resp.data[i].status === 2) {
+            batList.push(resp.data[i]);
+          }
+        }
+        const memLegend = getLegend(memList);
+        const memData = getSeries(memList, memLegend);
+        mem.setOption({
+          title: { text: '内存详情' },
+          series: memData,
+          legend: {
+            data: memLegend,
+          },
+          xAxis: [
+            {
+              data: getTimes(memList),
+            },
+          ],
+          yAxis: [{ name: '单位(KB)' }],
+        });
+        mem.setOption(option);
+        const batLegend = getLegend(batList);
+        const batData = getSeries(batList, batLegend);
+        bat.setOption({
+          title: { text: '电量详情' },
+          series: batData,
+          legend: {
+            data: batLegend,
+          },
+          xAxis: [
+            {
+              data: getTimes(batList),
+            },
+          ],
+          yAxis: [{ name: '单位(%)', max: 100, min: 0 }],
+        });
+        bat.setOption(option);
+        if (resizeFun !== undefined) {
+          window.removeEventListener('resize', resizeFun);
+        }
+        resizeFun = () => {
+          mem.resize();
+          bat.resize();
+        };
+        window.addEventListener('resize', resizeFun);
+      } else {
+        mem.showLoading({
+          text: '内存数据不足',
+          fontSize: 20,
+          textColor: '#606266',
+          showSpinner: false,
+        });
+        bat.showLoading({
+          text: '电量数据不足',
+          fontSize: 20,
+          textColor: '#606266',
+          showSpinner: false,
+        });
+        ElMessage.info({
+          message: '性能数据不足！',
+        });
+      }
+    });
+};
+const switchDevice = async (e) => {
+  page = 1;
+  done.value = false;
+  stepList.value = [];
+  type.value = 'log';
+  await getStepList();
+};
+const loadMore = () => {
+  page++;
+  getStepList();
+};
+const getStepList = () => {
+  stepLoading.value = true;
+  axios
+    .get('/controller/resultDetail/list', {
+      params: {
+        caseId: caseId.value,
+        resultId: route.params.resultId,
+        deviceId: deviceId.value,
+        type: 'step',
+        page,
+      },
+    })
+    .then(async (resp) => {
+      stepLoading.value = false;
+      if (resp.code === 2000) {
+        stepList.value.push(...resp.data.content);
+        if (resp.data.totalPages === page) {
+          done.value = true;
+        }
+      }
+    });
+};
+const getDeviceList = (ids) => {
+  const list = ids.map((obj) => {
+    return obj.deviceId;
+  });
+  if (list.length > 0) {
     axios
-      .get('/controller/resultDetail/list', {
+      .get('/controller/devices/findByIdIn', {
         params: {
-          caseId: caseId.value,
-          resultId: route.params.resultId,
-          deviceId: deviceId.value,
-          type: 'step',
-          page,
+          ids: list,
         },
       })
       .then(async (resp) => {
-        stepLoading.value = false;
         if (resp.code === 2000) {
-          stepList.value.push(...resp.data.content);
-          if (resp.data.totalPages === page) {
-            done.value = true;
-          }
-        }
-      });
-  };
-  const getDeviceList = (ids) => {
-    const list = ids.map((obj) => {
-      return obj.deviceId;
-    });
-    if (list.length > 0) {
-      axios
-        .get('/controller/devices/findByIdIn', {
-          params: {
-            ids: list,
-          },
-        })
-        .then(async (resp) => {
-          if (resp.code === 2000) {
-            deviceList.value = resp.data;
-            for (const i in ids) {
-              for (const j in deviceList.value) {
-                if (ids[i].deviceId === deviceList.value[j].id) {
-                  deviceList.value[j].status = ids[i].status;
-                }
+          deviceList.value = resp.data;
+          for (const i in ids) {
+            for (const j in deviceList.value) {
+              if (ids[i].deviceId === deviceList.value[j].id) {
+                deviceList.value[j].status = ids[i].status;
               }
             }
-            if (deviceList.value.length > 0) {
-              deviceId.value = `${deviceList.value[0].id}`;
-              getStepList();
-            }
           }
-        });
-    }
-  };
-  const getResultInfo = (id) => {
-    axios.get('/controller/results', { params: { id } }).then(async (resp) => {
-      if (resp.code === 2000) {
-        results.value = resp.data;
-        findCaseStatus(results.value.id);
-      }
-    });
-  };
-  const findCaseStatus = (id) => {
-    let chart = echarts.getInstanceByDom(document.getElementById('chart'));
-    if (chart == null) {
-      chart = echarts.init(document.getElementById('chart'));
-    }
-    const option = {
-      title: {
-        text: '用例运行状态分布',
-        left: 'center',
-      },
-      tooltip: {
-        trigger: 'item',
-      },
-      legend: {
-        orient: 'vertical',
-        right: 'right',
-      },
-    };
-    axios
-      .get('/controller/results/findCaseStatus', { params: { id } })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          testCaseList.value = resp.data;
-          const legend = [
-            { value: 0, name: '未开始' },
-            { value: 0, name: '通过' },
-            { value: 0, name: '警告' },
-            { value: 0, name: '失败' },
-            { value: 0, name: '运行中' },
-          ];
-          for (const i in testCaseList.value) {
-            legend[testCaseList.value[i].status].value++;
-          }
-          chart.setOption({
-            series: [
-              {
-                name: '用例状态',
-                type: 'pie',
-                radius: '50%',
-                data: legend,
-              },
-            ],
-          });
-          chart.setOption(option);
-          if (resizeChart !== undefined) {
-            window.removeEventListener('resize', resizeChart);
-          }
-          resizeChart = () => {
-            chart.resize();
-          };
-          window.addEventListener('resize', resizeChart);
-          if (testCaseList.value.length > 0) {
-            caseId.value = testCaseList.value[0].case.id;
-            if (testCaseList.value[0].device.length > 0) {
-              getDeviceList(testCaseList.value[0].device);
-            }
+          if (deviceList.value.length > 0) {
+            deviceId.value = `${deviceList.value[0].id}`;
+            getStepList();
           }
         }
       });
+  }
+};
+const getResultInfo = (id) => {
+  axios.get('/controller/results', { params: { id } }).then(async (resp) => {
+    if (resp.code === 2000) {
+      results.value = resp.data;
+      findCaseStatus(results.value.id);
+    }
+  });
+};
+const findCaseStatus = (id) => {
+  let chart = echarts.getInstanceByDom(document.getElementById('chart'));
+  if (chart == null) {
+    chart = echarts.init(document.getElementById('chart'));
+  }
+  const option = {
+    title: {
+      text: '用例运行状态分布',
+      left: 'center',
+    },
+    tooltip: {
+      trigger: 'item',
+    },
+    legend: {
+      orient: 'vertical',
+      right: 'right',
+    },
   };
-  onMounted(() => {
-    let chart = echarts.getInstanceByDom(document.getElementById('chart'));
-    if (chart == null) {
-      chart = echarts.init(document.getElementById('chart'));
-    }
-    chart.dispose();
-    getResultInfo(route.params.resultId);
-  });
-  onUnmounted(() => {
-    if (resizeChart !== undefined) {
-      window.removeEventListener('resize', resizeChart);
-    }
-    if (resizeFun !== undefined) {
-      window.removeEventListener('resize', resizeFun);
-    }
-  });
+  axios
+    .get('/controller/results/findCaseStatus', { params: { id } })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        testCaseList.value = resp.data;
+        const legend = [
+          { value: 0, name: '未开始' },
+          { value: 0, name: '通过' },
+          { value: 0, name: '警告' },
+          { value: 0, name: '失败' },
+          { value: 0, name: '运行中' },
+        ];
+        for (const i in testCaseList.value) {
+          legend[testCaseList.value[i].status].value++;
+        }
+        chart.setOption({
+          series: [
+            {
+              name: '用例状态',
+              type: 'pie',
+              radius: '50%',
+              data: legend,
+            },
+          ],
+        });
+        chart.setOption(option);
+        if (resizeChart !== undefined) {
+          window.removeEventListener('resize', resizeChart);
+        }
+        resizeChart = () => {
+          chart.resize();
+        };
+        window.addEventListener('resize', resizeChart);
+        if (testCaseList.value.length > 0) {
+          caseId.value = testCaseList.value[0].case.id;
+          if (testCaseList.value[0].device.length > 0) {
+            getDeviceList(testCaseList.value[0].device);
+          }
+        }
+      }
+    });
+};
+onMounted(() => {
+  let chart = echarts.getInstanceByDom(document.getElementById('chart'));
+  if (chart == null) {
+    chart = echarts.init(document.getElementById('chart'));
+  }
+  chart.dispose();
+  getResultInfo(route.params.resultId);
+});
+onUnmounted(() => {
+  if (resizeChart !== undefined) {
+    window.removeEventListener('resize', resizeChart);
+  }
+  if (resizeFun !== undefined) {
+    window.removeEventListener('resize', resizeFun);
+  }
+});
 </script>
 
 <template>
@@ -653,8 +653,8 @@
 </template>
 
 <style scoped lang="less">
-  // 勿删，用于video-play组件样式穿透
-  .d-player-wrap {
-    border-radius: 1.5rem;
-  }
+// 勿删，用于video-play组件样式穿透
+.d-player-wrap {
+  border-radius: 1.5rem;
+}
 </style>

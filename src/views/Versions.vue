@@ -1,88 +1,88 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
+import { onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
 
-  const route = useRoute();
-  const dialogVisible = ref(false);
-  const pageData = ref([]);
-  const updateVersion = ref(null);
-  const versions = ref({
+const route = useRoute();
+const dialogVisible = ref(false);
+const pageData = ref([]);
+const updateVersion = ref(null);
+const versions = ref({
+  id: null,
+  projectId: route.params.projectId,
+  versionName: '',
+  createTime: '',
+});
+const editVersion = async (id) => {
+  await open();
+  await getVersionInfo(id);
+};
+const open = () => {
+  versions.value = {
     id: null,
     projectId: route.params.projectId,
     versionName: '',
     createTime: '',
-  });
-  const editVersion = async (id) => {
-    await open();
-    await getVersionInfo(id);
   };
-  const open = () => {
-    versions.value = {
-      id: null,
-      projectId: route.params.projectId,
-      versionName: '',
-      createTime: '',
-    };
-    dialogVisible.value = true;
-  };
-  const getVersionList = () => {
-    axios
-      .get('/controller/versions/list', {
-        params: {
-          projectId: route.params.projectId,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const getVersionInfo = (id) => {
-    axios
-      .get('/controller/versions', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        versions.value = resp.data;
-      });
-  };
-  const deleteVersion = (id) => {
-    axios
-      .delete('/controller/versions', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
+  dialogVisible.value = true;
+};
+const getVersionList = () => {
+  axios
+    .get('/controller/versions/list', {
+      params: {
+        projectId: route.params.projectId,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const getVersionInfo = (id) => {
+  axios
+    .get('/controller/versions', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      versions.value = resp.data;
+    });
+};
+const deleteVersion = (id) => {
+  axios
+    .delete('/controller/versions', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getVersionList();
+      }
+    });
+};
+const summit = () => {
+  updateVersion.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/versions', versions.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
+          dialogVisible.value = false;
           getVersionList();
         }
       });
-  };
-  const summit = () => {
-    updateVersion.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/versions', versions.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            dialogVisible.value = false;
-            getVersionList();
-          }
-        });
-      }
-    });
-  };
-  onMounted(() => {
-    getVersionList();
+    }
   });
+};
+onMounted(() => {
+  getVersionList();
+});
 </script>
 
 <template>

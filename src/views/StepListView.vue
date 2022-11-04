@@ -1,44 +1,44 @@
 <script setup>
-  import { useRoute, useRouter } from 'vue-router';
-  import { onMounted, ref } from 'vue';
-  import axios from '../http/axios';
-  import StepList from '../components/StepList.vue';
+import { useRoute, useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
+import axios from '../http/axios';
+import StepList from '../components/StepList.vue';
 
-  const img = import.meta.globEager('./../assets/img/*');
-  const route = useRoute();
-  const router = useRouter();
-  const testCase = ref({});
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const getCaseInfo = (id) => {
-    axios
-      .get('/controller/testCases', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          testCase.value = resp.data;
-        }
-      });
-  };
-  onMounted(() => {
-    getCaseInfo(route.params.caseId);
-  });
+const img = import.meta.globEager('./../assets/img/*');
+const route = useRoute();
+const router = useRouter();
+const testCase = ref({});
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const getCaseInfo = (id) => {
+  axios
+    .get('/controller/testCases', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        testCase.value = resp.data;
+      }
+    });
+};
+onMounted(() => {
+  getCaseInfo(route.params.caseId);
+});
 </script>
 
 <template>

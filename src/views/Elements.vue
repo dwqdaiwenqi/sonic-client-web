@@ -1,144 +1,144 @@
 <script setup>
-  import { useRoute } from 'vue-router';
-  import { onMounted, ref, watch } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import ElementUpdate from '../components/ElementUpdate.vue';
-  import axios from '../http/axios';
-  import Pageable from '../components/Pageable.vue';
+import { useRoute } from 'vue-router';
+import { onMounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import ElementUpdate from '../components/ElementUpdate.vue';
+import axios from '../http/axios';
+import Pageable from '../components/Pageable.vue';
 
-  const route = useRoute();
-  const dialogElement = ref(false);
-  const elementId = ref(0);
-  const deleteId = ref(0);
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const name = ref('');
-  const value = ref('');
-  const types = ref([]);
-  const stepList = ref([]);
-  const checkDialog = ref(false);
+const route = useRoute();
+const dialogElement = ref(false);
+const elementId = ref(0);
+const deleteId = ref(0);
+const pageData = ref({});
+const pageSize = ref(15);
+const name = ref('');
+const value = ref('');
+const types = ref([]);
+const stepList = ref([]);
+const checkDialog = ref(false);
 
-  watch(dialogElement, (newValue, oldValue) => {
-    if (!newValue) {
-      elementId.value = 0;
-    }
-  });
-  watch(checkDialog, (newValue, oldValue) => {
-    if (!newValue) {
-      deleteId.value = 0;
-      stepList.value = [];
-    }
-  });
-  const editElement = async (id) => {
-    elementId.value = id;
-    await open();
-  };
-  const open = () => {
-    dialogElement.value = true;
-  };
-  const flush = () => {
-    dialogElement.value = false;
-    getElementList();
-  };
-  const moduleIds = ref([]);
-  const getElementList = (pageNum, pSize) => {
-    axios
-      .get('/controller/elements/list', {
-        params: {
-          projectId: route.params.projectId,
-          eleTypes: types.value.length > 0 ? types.value : undefined,
-          moduleIds: moduleIds.value.length > 0 ? moduleIds.value : undefined,
-          name: name.value,
-          value: value.value,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const deleteEle = (id) => {
-    axios
-      .get('/controller/elements/deleteCheck', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          stepList.value = resp.data;
-          if (stepList.value.length === 0) {
-            deleteReal(id);
-          } else {
-            deleteId.value = id;
-            checkDialog.value = true;
-          }
+watch(dialogElement, (newValue, oldValue) => {
+  if (!newValue) {
+    elementId.value = 0;
+  }
+});
+watch(checkDialog, (newValue, oldValue) => {
+  if (!newValue) {
+    deleteId.value = 0;
+    stepList.value = [];
+  }
+});
+const editElement = async (id) => {
+  elementId.value = id;
+  await open();
+};
+const open = () => {
+  dialogElement.value = true;
+};
+const flush = () => {
+  dialogElement.value = false;
+  getElementList();
+};
+const moduleIds = ref([]);
+const getElementList = (pageNum, pSize) => {
+  axios
+    .get('/controller/elements/list', {
+      params: {
+        projectId: route.params.projectId,
+        eleTypes: types.value.length > 0 ? types.value : undefined,
+        moduleIds: moduleIds.value.length > 0 ? moduleIds.value : undefined,
+        name: name.value,
+        value: value.value,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const deleteEle = (id) => {
+  axios
+    .get('/controller/elements/deleteCheck', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        stepList.value = resp.data;
+        if (stepList.value.length === 0) {
+          deleteReal(id);
+        } else {
+          deleteId.value = id;
+          checkDialog.value = true;
         }
-      });
-  };
-  // 复制元素，复制以后重新拉去列表
-  const copyElement = (id) => {
-    axios
-      .get('/controller/elements/copyEle', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getElementList();
-        }
-      });
-  };
-  const deleteReal = (id) => {
-    axios
-      .delete('/controller/elements', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          checkDialog.value = false;
-          getElementList();
-        }
-      });
-  };
-  const moduleList = ref([]);
-  const getModuleList = () => {
-    axios
-      .get('/controller/modules/list', {
-        params: { projectId: route.params.projectId },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          resp.data.map((item) => {
-            moduleList.value.push({ text: item.name, value: item.id });
-          });
-          moduleList.value.push({ text: '无', value: 0 });
-        }
-      });
-  };
-  const filter = (e) => {
-    if (e.eleType) {
-      types.value = e.eleType;
-    }
-    if (e.moduleId) {
-      moduleIds.value = e.moduleId;
-    }
-    getElementList();
-  };
-  onMounted(() => {
-    getElementList();
-    getModuleList();
-  });
+      }
+    });
+};
+// 复制元素，复制以后重新拉去列表
+const copyElement = (id) => {
+  axios
+    .get('/controller/elements/copyEle', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getElementList();
+      }
+    });
+};
+const deleteReal = (id) => {
+  axios
+    .delete('/controller/elements', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        checkDialog.value = false;
+        getElementList();
+      }
+    });
+};
+const moduleList = ref([]);
+const getModuleList = () => {
+  axios
+    .get('/controller/modules/list', {
+      params: { projectId: route.params.projectId },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        resp.data.map((item) => {
+          moduleList.value.push({ text: item.name, value: item.id });
+        });
+        moduleList.value.push({ text: '无', value: 0 });
+      }
+    });
+};
+const filter = (e) => {
+  if (e.eleType) {
+    types.value = e.eleType;
+  }
+  if (e.moduleId) {
+    moduleIds.value = e.moduleId;
+  }
+  getElementList();
+};
+onMounted(() => {
+  getElementList();
+  getModuleList();
+});
 </script>
 
 <template>

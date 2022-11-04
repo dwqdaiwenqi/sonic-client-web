@@ -1,28 +1,28 @@
 <script setup>
-  const statusList = {
-    ONLINE: {
-      type: 'success',
-    },
-    OFFLINE: {
-      type: 'info',
-    },
-    DISCONNECTED: {
-      type: 'info',
-    },
-    DEBUGGING: {},
-    TESTING: {},
-    UNAUTHORIZED: {
-      type: 'danger',
-    },
-    ERROR: {
-      type: 'warning',
-    },
-  };
-  const props = defineProps({
-    status: String,
-    user: String,
-  });
-  const selObj = statusList[props.status] || { type: 'danger' };
+const statusList = {
+  ONLINE: {
+    type: 'success',
+  },
+  OFFLINE: {
+    type: 'info',
+  },
+  DISCONNECTED: {
+    type: 'info',
+  },
+  DEBUGGING: {},
+  TESTING: {},
+  UNAUTHORIZED: {
+    type: 'danger',
+  },
+  ERROR: {
+    type: 'warning',
+  },
+};
+const props = defineProps({
+  status: String,
+  user: String,
+});
+const selObj = statusList[props.status] || { type: 'danger' };
 </script>
 
 <template>

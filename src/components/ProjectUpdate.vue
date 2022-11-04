@@ -1,121 +1,121 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useRoute, useRouter } from 'vue-router';
-  import { useStore } from 'vuex';
-  import axios from '../http/axios';
+import { onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    isUpdate: Boolean,
+const props = defineProps({
+  isUpdate: Boolean,
+});
+const store = useStore();
+const route = useRoute();
+const router = useRouter();
+const project = ref({
+  id: null,
+  projectName: '',
+  projectDes: '',
+  robotType: 1,
+  robotToken: '',
+  robotSecret: '',
+  projectImg: '',
+});
+const projectUpdateForm = ref(null);
+const dialogDel = ref(false);
+const img = import.meta.globEager('./../assets/img/*');
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const robotList = [
+  { name: '钉钉群机器人', value: 1, img: 'DingTalk' },
+  { name: '企业微信机器人', value: 2, img: 'WeChat' },
+  { name: '飞书群机器人', value: 3, img: 'FeiShu' },
+  { name: '友空间机器人(即将开放)', value: 4, img: 'You', disabled: true },
+];
+const beforeAvatarUpload = (file) => {
+  if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
+    return true;
+  }
+  ElMessage.error({
+    message: '文件格式有误！',
   });
-  const store = useStore();
-  const route = useRoute();
-  const router = useRouter();
-  const project = ref({
-    id: null,
-    projectName: '',
-    projectDes: '',
-    robotType: 1,
-    robotToken: '',
-    robotSecret: '',
-    projectImg: '',
+  return false;
+};
+const limitOut = () => {
+  ElMessage.error({
+    message: '只能添加一个文件！请先移除旧文件',
   });
-  const projectUpdateForm = ref(null);
-  const dialogDel = ref(false);
-  const img = import.meta.globEager('./../assets/img/*');
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const robotList = [
-    { name: '钉钉群机器人', value: 1, img: 'DingTalk' },
-    { name: '企业微信机器人', value: 2, img: 'WeChat' },
-    { name: '飞书群机器人', value: 3, img: 'FeiShu' },
-    { name: '友空间机器人(即将开放)', value: 4, img: 'You', disabled: true },
-  ];
-  const beforeAvatarUpload = (file) => {
-    if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
-      return true;
-    }
-    ElMessage.error({
-      message: '文件格式有误！',
-    });
-    return false;
-  };
-  const limitOut = () => {
-    ElMessage.error({
-      message: '只能添加一个文件！请先移除旧文件',
-    });
-  };
-  const upload = (content) => {
-    const formData = new FormData();
-    formData.append('file', content.file);
-    formData.append('type', 'keepFiles');
-    axios
-      .post('/folder/upload', formData, {
-        headers: { 'Content-type': 'multipart/form-data' },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          project.value.projectImg = resp.data;
-        }
-      });
-  };
-  const emit = defineEmits(['flush']);
-  const summit = () => {
-    projectUpdateForm.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/projects', project.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            if (props.isUpdate) {
-              store.commit('saveProject', project.value);
-            }
-            emit('flush');
-          }
+};
+const upload = (content) => {
+  const formData = new FormData();
+  formData.append('file', content.file);
+  formData.append('type', 'keepFiles');
+  axios
+    .post('/folder/upload', formData, {
+      headers: { 'Content-type': 'multipart/form-data' },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
         });
+        project.value.projectImg = resp.data;
       }
     });
-  };
-  const fullscreenLoading = ref(false);
-  const delProject = () => {
-    fullscreenLoading.value = true;
-    axios
-      .delete('/controller/projects', {
-        params: { id: route.params.projectId },
-      })
-      .then((resp) => {
-        fullscreenLoading.value = false;
+};
+const emit = defineEmits(['flush']);
+const summit = () => {
+  projectUpdateForm.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/projects', project.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
-          dialogDel.value = false;
-          router.push('/');
+          if (props.isUpdate) {
+            store.commit('saveProject', project.value);
+          }
+          emit('flush');
         }
       });
-  };
-  onMounted(() => {
-    if (props.isUpdate) {
-      project.value = JSON.parse(JSON.stringify(store.state.project));
     }
   });
+};
+const fullscreenLoading = ref(false);
+const delProject = () => {
+  fullscreenLoading.value = true;
+  axios
+    .delete('/controller/projects', {
+      params: { id: route.params.projectId },
+    })
+    .then((resp) => {
+      fullscreenLoading.value = false;
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        dialogDel.value = false;
+        router.push('/');
+      }
+    });
+};
+onMounted(() => {
+  if (props.isUpdate) {
+    project.value = JSON.parse(JSON.stringify(store.state.project));
+  }
+});
 </script>
 
 <template>

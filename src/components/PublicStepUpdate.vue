@@ -1,187 +1,187 @@
 <script setup>
-  import { onMounted, ref, watch } from 'vue';
-  import { Delete, Edit, Plus } from '@element-plus/icons';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
-  import StepShow from './StepShow.vue';
-  import StepUpdate from './StepUpdate.vue';
-  import StepDraggable from './StepDraggable.vue';
-  import Pageable from './Pageable.vue';
+import { onMounted, ref, watch } from 'vue';
+import { Delete, Edit, Plus } from '@element-plus/icons';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
+import StepShow from './StepShow.vue';
+import StepUpdate from './StepUpdate.vue';
+import StepDraggable from './StepDraggable.vue';
+import Pageable from './Pageable.vue';
 
-  const props = defineProps({
-    projectId: Number,
-    publicStepId: Number,
-  });
-  const img = import.meta.globEager('./../assets/img/*');
-  const publicStep = ref({
-    id: null,
-    projectId: props.projectId,
-    platform: 1,
-    name: '',
-    steps: [],
-  });
-  // 公共步骤信息页面搜索文案
-  const searchText = ref('');
-  const updatePub = ref(null);
-  const parentId = ref(0);
-  const pageData = ref({});
-  const pageSize = ref(10);
-  const dialogVisible = ref(false);
-  const stepId = ref(0);
-  const tabValue = ref('select');
-  const platformList = [
-    { name: '安卓', value: 1, img: 'ANDROID' },
-    { name: 'iOS', value: 2, img: 'IOS' },
-  ];
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`./../assets/img/${name}.jpg`].default;
-    } catch {
-      result = img['./../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  const getStepList = (pageNum, pSize) => {
+const props = defineProps({
+  projectId: Number,
+  publicStepId: Number,
+});
+const img = import.meta.globEager('./../assets/img/*');
+const publicStep = ref({
+  id: null,
+  projectId: props.projectId,
+  platform: 1,
+  name: '',
+  steps: [],
+});
+// 公共步骤信息页面搜索文案
+const searchText = ref('');
+const updatePub = ref(null);
+const parentId = ref(0);
+const pageData = ref({});
+const pageSize = ref(10);
+const dialogVisible = ref(false);
+const stepId = ref(0);
+const tabValue = ref('select');
+const platformList = [
+  { name: '安卓', value: 1, img: 'ANDROID' },
+  { name: 'iOS', value: 2, img: 'IOS' },
+];
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`./../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['./../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+const getStepList = (pageNum, pSize) => {
+  axios
+    .get('/controller/steps/list', {
+      params: {
+        projectId: props.projectId,
+        platform: publicStep.value.platform,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+
+// 搜索步骤列表
+const searchListOfSteps = (pageNum, pSize) => {
+  if (searchText.value.length === 0) {
+    getStepList(pageNum, pSize);
+  } else {
     axios
-      .get('/controller/steps/list', {
+      .get('/controller/steps/search/list', {
         params: {
           projectId: props.projectId,
           platform: publicStep.value.platform,
           page: pageNum || 1,
           pageSize: pSize || pageSize.value,
+          searchContent: searchText.value,
         },
       })
       .then((resp) => {
         pageData.value = resp.data;
       });
-  };
-
-  // 搜索步骤列表
-  const searchListOfSteps = (pageNum, pSize) => {
-    if (searchText.value.length === 0) {
-      getStepList(pageNum, pSize);
-    } else {
-      axios
-        .get('/controller/steps/search/list', {
-          params: {
-            projectId: props.projectId,
-            platform: publicStep.value.platform,
-            page: pageNum || 1,
-            pageSize: pSize || pageSize.value,
-            searchContent: searchText.value,
-          },
-        })
-        .then((resp) => {
-          pageData.value = resp.data;
+  }
+};
+const deleteStep = (id) => {
+  axios
+    .delete('/controller/steps', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
         });
-    }
-  };
-  const deleteStep = (id) => {
-    axios
-      .delete('/controller/steps', {
-        params: {
-          id,
-        },
-      })
+        getStepList();
+      }
+    });
+};
+watch(dialogVisible, (newValue, oldValue) => {
+  if (!newValue) {
+    stepId.value = 0;
+    parentId.value = 0;
+  }
+});
+const setParent = (id) => {
+  parentId.value = id;
+};
+const editStep = async (id) => {
+  stepId.value = id;
+  await addStep();
+};
+const addStep = () => {
+  dialogVisible.value = true;
+};
+let isAddOrRemoved = false;
+const flush = async () => {
+  if (isAddOrRemoved) {
+    await axios
+      .put('/controller/publicSteps', publicStep.value)
       .then((resp) => {
+        if (resp.code === 2000) {
+          ElMessage.success({
+            message: '自动保存中...',
+          });
+        }
+      });
+    isAddOrRemoved = false;
+  }
+  dialogVisible.value = false;
+  if (publicStep.value.id !== 0 && publicStep.value.id !== null) {
+    await getPublicStepInfo(publicStep.value.id);
+  }
+  getStepList();
+};
+const addToPublic = (e) => {
+  publicStep.value.steps.push(e);
+  isAddOrRemoved = true;
+  ElMessage.success({
+    message: '选择成功！已加入到已选步骤',
+  });
+};
+const removeFromPublic = (e) => {
+  publicStep.value.steps.splice(e, 1);
+  isAddOrRemoved = true;
+  ElMessage.success({
+    message: '移出成功！',
+  });
+};
+const emit = defineEmits(['flush']);
+const summit = () => {
+  updatePub.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/publicSteps', publicStep.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
-          getStepList();
+          if (publicStep.value.id === null || publicStep.value.id === 0) {
+            getPublicStepInfo(resp.data.id);
+            emit('flush', false);
+          } else {
+            emit('flush', true);
+          }
         }
       });
-  };
-  watch(dialogVisible, (newValue, oldValue) => {
-    if (!newValue) {
-      stepId.value = 0;
-      parentId.value = 0;
     }
   });
-  const setParent = (id) => {
-    parentId.value = id;
-  };
-  const editStep = async (id) => {
-    stepId.value = id;
-    await addStep();
-  };
-  const addStep = () => {
-    dialogVisible.value = true;
-  };
-  let isAddOrRemoved = false;
-  const flush = async () => {
-    if (isAddOrRemoved) {
-      await axios
-        .put('/controller/publicSteps', publicStep.value)
-        .then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: '自动保存中...',
-            });
-          }
-        });
-      isAddOrRemoved = false;
+};
+const getPublicStepInfo = (id) => {
+  axios.get('/controller/publicSteps', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      publicStep.value = resp.data;
     }
-    dialogVisible.value = false;
-    if (publicStep.value.id !== 0 && publicStep.value.id !== null) {
-      await getPublicStepInfo(publicStep.value.id);
-    }
-    getStepList();
-  };
-  const addToPublic = (e) => {
-    publicStep.value.steps.push(e);
-    isAddOrRemoved = true;
-    ElMessage.success({
-      message: '选择成功！已加入到已选步骤',
-    });
-  };
-  const removeFromPublic = (e) => {
-    publicStep.value.steps.splice(e, 1);
-    isAddOrRemoved = true;
-    ElMessage.success({
-      message: '移出成功！',
-    });
-  };
-  const emit = defineEmits(['flush']);
-  const summit = () => {
-    updatePub.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/publicSteps', publicStep.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            if (publicStep.value.id === null || publicStep.value.id === 0) {
-              getPublicStepInfo(resp.data.id);
-              emit('flush', false);
-            } else {
-              emit('flush', true);
-            }
-          }
-        });
-      }
-    });
-  };
-  const getPublicStepInfo = (id) => {
-    axios.get('/controller/publicSteps', { params: { id } }).then((resp) => {
-      if (resp.code === 2000) {
-        publicStep.value = resp.data;
-      }
-    });
-  };
-  onMounted(() => {
-    if (props.publicStepId !== 0) {
-      getPublicStepInfo(props.publicStepId);
-    }
-    getStepList();
   });
+};
+onMounted(() => {
+  if (props.publicStepId !== 0) {
+    getPublicStepInfo(props.publicStepId);
+  }
+  getStepList();
+});
 </script>
 
 <template>

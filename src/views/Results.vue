@@ -1,63 +1,63 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import Pageable from '../components/Pageable.vue';
-  import axios from '../http/axios';
+import { onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import Pageable from '../components/Pageable.vue';
+import axios from '../http/axios';
 
-  const route = useRoute();
-  const router = useRouter();
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const currentPage = ref(0);
-  const getResultList = (pageNum, pSize) => {
-    axios
-      .get('/controller/results/list', {
-        params: {
-          projectId: route.params.projectId,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const delResult = (id) => {
-    axios
-      .delete('/controller/results', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getResultList();
-        }
-      });
-  };
-  const forceStopSuite = (id) => {
-    axios
-      .get('/controller/testSuites/forceStopSuite', {
-        params: {
-          resultId: id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getResultList();
-        }
-      });
-  };
-  onMounted(() => {
-    getResultList();
-  });
+const route = useRoute();
+const router = useRouter();
+const pageData = ref({});
+const pageSize = ref(15);
+const currentPage = ref(0);
+const getResultList = (pageNum, pSize) => {
+  axios
+    .get('/controller/results/list', {
+      params: {
+        projectId: route.params.projectId,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const delResult = (id) => {
+  axios
+    .delete('/controller/results', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getResultList();
+      }
+    });
+};
+const forceStopSuite = (id) => {
+  axios
+    .get('/controller/testSuites/forceStopSuite', {
+      params: {
+        resultId: id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getResultList();
+      }
+    });
+};
+onMounted(() => {
+  getResultList();
+});
 </script>
 
 <template>

@@ -6,12 +6,12 @@
     import { ElMessage } from 'element-plus';
   import { useI18n } from 'vue-i18n';
   import useClipboard from 'vue-clipboard3';
+  import { localeList } from '@/config/locale';
+  import useLocale from '@/locales/useLocale';
   import axios from '../http/axios';
   import logo from "../assets/logo.png";
   import ProjectUpdate from "./ProjectUpdate.vue";
   import defaultLogo from '../assets/logo.png';
-  import { localeList } from '@/config/locale';
-  import useLocale from '@/locales/useLocale';
 
   const { toClipboard } = useClipboard();
 

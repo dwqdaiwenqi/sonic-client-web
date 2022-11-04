@@ -1,70 +1,70 @@
 <script setup>
-  import { onMounted, ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { ElMessage } from 'element-plus';
-  import useClipboard from 'vue-clipboard3';
-  import { useI18n } from 'vue-i18n';
-  import jenkins from '../assets/img/jenkins.png';
-  import axios from '../http/axios';
-  import Pageable from '../components/Pageable.vue';
+import { onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import useClipboard from 'vue-clipboard3';
+import { useI18n } from 'vue-i18n';
+import jenkins from '../assets/img/jenkins.png';
+import axios from '../http/axios';
+import Pageable from '../components/Pageable.vue';
 
-  const { t: $t } = useI18n();
+const { t: $t } = useI18n();
 
-  const { toClipboard } = useClipboard();
+const { toClipboard } = useClipboard();
 
-  const route = useRoute();
-  const router = useRouter();
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const currentPage = ref(0);
-  const platform = ref('');
-  const branch = ref('');
+const route = useRoute();
+const router = useRouter();
+const pageData = ref({});
+const pageSize = ref(15);
+const currentPage = ref(0);
+const platform = ref('');
+const branch = ref('');
 
-  const getPackageList = (pageNum, pSize) => {
-    axios
-      .get('/controller/packages/list', {
-        params: {
-          projectId: route.params.projectId,
-          page: pageNum || 1,
-          platform: platform.value,
-          branch: branch.value,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
+const getPackageList = (pageNum, pSize) => {
+  axios
+    .get('/controller/packages/list', {
+      params: {
+        projectId: route.params.projectId,
+        page: pageNum || 1,
+        platform: platform.value,
+        branch: branch.value,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
 
-  const filter = (e) => {
-    platform.value = e.platform[0];
-    getPackageList();
-  };
+const filter = (e) => {
+  platform.value = e.platform[0];
+  getPackageList();
+};
 
-  const copy = (value) => {
-    try {
-      toClipboard(value);
-      ElMessage.success({
-        message: $t('dialog.copy.success'),
-      });
-    } catch (e) {
-      ElMessage.error({
-        message: $t('dialog.copy.fail'),
-      });
-    }
-  };
-  const getBuildId = (data) => {
-    if (data && data != null && data.length > 0 && data.indexOf('/') >= 2) {
-      return data.substring(
-        data.substring(0, data.lastIndexOf('/')).lastIndexOf('/') + 1,
-        data.length - 1
-      );
-    }
-    return '';
-  };
-  onMounted(() => {
-    getPackageList();
-  });
+const copy = (value) => {
+  try {
+    toClipboard(value);
+    ElMessage.success({
+      message: $t('dialog.copy.success'),
+    });
+  } catch (e) {
+    ElMessage.error({
+      message: $t('dialog.copy.fail'),
+    });
+  }
+};
+const getBuildId = (data) => {
+  if (data && data != null && data.length > 0 && data.indexOf('/') >= 2) {
+    return data.substring(
+      data.substring(0, data.lastIndexOf('/')).lastIndexOf('/') + 1,
+      data.length - 1
+    );
+  }
+  return '';
+};
+onMounted(() => {
+  getPackageList();
+});
 </script>
 
 <template>

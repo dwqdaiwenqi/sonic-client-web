@@ -1,5 +1,5 @@
 <script setup>
-  import ProjectUpdate from '../components/ProjectUpdate.vue';
+import ProjectUpdate from '../components/ProjectUpdate.vue';
 </script>
 
 <template>

@@ -1,85 +1,85 @@
 <script setup>
-  import { onMounted, ref, watch } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import { useRoute } from 'vue-router';
-  import axios from '../http/axios';
-  import TestSuiteUpdate from '../components/TestSuiteUpdate.vue';
-  import Pageable from '../components/Pageable.vue';
+import { onMounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useRoute } from 'vue-router';
+import axios from '../http/axios';
+import TestSuiteUpdate from '../components/TestSuiteUpdate.vue';
+import Pageable from '../components/Pageable.vue';
 
-  const route = useRoute();
-  const pageData = ref({});
-  const pageSize = ref(15);
-  const dialogVisible = ref(false);
-  const name = ref('');
-  const currentPage = ref(0);
-  const suiteId = ref(0);
-  const loading = ref(false);
-  const open = () => {
-    dialogVisible.value = true;
-  };
-  const getTestSuiteList = (pageNum, pSize) => {
-    axios
-      .get('/controller/testSuites/list', {
-        params: {
-          projectId: route.params.projectId,
-          name: name.value,
-          page: pageNum || 1,
-          pageSize: pSize || pageSize.value,
-        },
-      })
-      .then((resp) => {
-        pageData.value = resp.data;
-      });
-  };
-  const deleteSuite = (id) => {
-    axios
-      .delete('/controller/testSuites', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          getTestSuiteList();
-        }
-      });
-  };
-  const runSuite = (id) => {
-    loading.value = true;
-    axios
-      .get('/controller/testSuites/runSuite', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        loading.value = false;
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: `${resp.message}测试已开始...`,
-          });
-        }
-      });
-  };
-  const editSuite = async (id) => {
-    suiteId.value = id;
-    await open();
-  };
-  watch(dialogVisible, (newValue, oldValue) => {
-    if (!newValue) {
-      suiteId.value = 0;
-    }
-  });
-  const flush = () => {
-    dialogVisible.value = false;
-    getTestSuiteList();
-  };
-  onMounted(() => {
-    getTestSuiteList();
-  });
+const route = useRoute();
+const pageData = ref({});
+const pageSize = ref(15);
+const dialogVisible = ref(false);
+const name = ref('');
+const currentPage = ref(0);
+const suiteId = ref(0);
+const loading = ref(false);
+const open = () => {
+  dialogVisible.value = true;
+};
+const getTestSuiteList = (pageNum, pSize) => {
+  axios
+    .get('/controller/testSuites/list', {
+      params: {
+        projectId: route.params.projectId,
+        name: name.value,
+        page: pageNum || 1,
+        pageSize: pSize || pageSize.value,
+      },
+    })
+    .then((resp) => {
+      pageData.value = resp.data;
+    });
+};
+const deleteSuite = (id) => {
+  axios
+    .delete('/controller/testSuites', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        getTestSuiteList();
+      }
+    });
+};
+const runSuite = (id) => {
+  loading.value = true;
+  axios
+    .get('/controller/testSuites/runSuite', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      loading.value = false;
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: `${resp.message}测试已开始...`,
+        });
+      }
+    });
+};
+const editSuite = async (id) => {
+  suiteId.value = id;
+  await open();
+};
+watch(dialogVisible, (newValue, oldValue) => {
+  if (!newValue) {
+    suiteId.value = 0;
+  }
+});
+const flush = () => {
+  dialogVisible.value = false;
+  getTestSuiteList();
+};
+onMounted(() => {
+  getTestSuiteList();
+});
 </script>
 
 <template>

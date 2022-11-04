@@ -1,102 +1,102 @@
 <script setup>
-  import { ref, onMounted } from 'vue';
-  import { ElMessage } from 'element-plus';
-  import axios from '../http/axios';
+import { ref, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    projectId: Number,
-    elementId: Number,
-    elementObj: Object,
+const props = defineProps({
+  projectId: Number,
+  elementId: Number,
+  elementObj: Object,
+});
+const emit = defineEmits(['flush']);
+const element = ref({
+  id: null,
+  eleName: '',
+  eleType: '',
+  eleValue: '',
+  moduleId: 0,
+  projectId: props.projectId,
+});
+const updateEle = ref(null);
+const beforeAvatarUpload = (file) => {
+  if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
+    return true;
+  }
+  ElMessage.error({
+    message: '文件格式有误！',
   });
-  const emit = defineEmits(['flush']);
-  const element = ref({
-    id: null,
-    eleName: '',
-    eleType: '',
-    eleValue: '',
-    moduleId: 0,
-    projectId: props.projectId,
+  return false;
+};
+const limitOut = () => {
+  ElMessage.error({
+    message: '只能添加一个文件！请先移除旧文件',
   });
-  const updateEle = ref(null);
-  const beforeAvatarUpload = (file) => {
-    if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
-      return true;
-    }
-    ElMessage.error({
-      message: '文件格式有误！',
+};
+const upload = (content) => {
+  const formData = new FormData();
+  formData.append('file', content.file);
+  formData.append('type', 'keepFiles');
+  axios
+    .post('/folder/upload', formData, {
+      headers: { 'Content-type': 'multipart/form-data' },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        element.value.eleValue = resp.data;
+      }
     });
-    return false;
-  };
-  const limitOut = () => {
-    ElMessage.error({
-      message: '只能添加一个文件！请先移除旧文件',
+};
+const getElementInfo = (id) => {
+  axios
+    .get('/controller/elements', {
+      params: {
+        id,
+      },
+    })
+    .then((resp) => {
+      element.value = resp.data;
     });
-  };
-  const upload = (content) => {
-    const formData = new FormData();
-    formData.append('file', content.file);
-    formData.append('type', 'keepFiles');
-    axios
-      .post('/folder/upload', formData, {
-        headers: { 'Content-type': 'multipart/form-data' },
-      })
-      .then((resp) => {
+};
+const saveElement = () => {
+  updateEle.value.validate((valid) => {
+    if (valid) {
+      axios.put('/controller/elements', element.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
-          element.value.eleValue = resp.data;
+          emit('flush');
         }
       });
-  };
-  const getElementInfo = (id) => {
-    axios
-      .get('/controller/elements', {
-        params: {
-          id,
-        },
-      })
-      .then((resp) => {
-        element.value = resp.data;
-      });
-  };
-  const saveElement = () => {
-    updateEle.value.validate((valid) => {
-      if (valid) {
-        axios.put('/controller/elements', element.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            emit('flush');
-          }
-        });
+    }
+  });
+};
+const moduleList = ref([]);
+const getModuleList = () => {
+  axios
+    .get('/controller/modules/list', {
+      params: { projectId: props.projectId },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        moduleList.value = resp.data;
+        moduleList.value.push({ id: 0, name: '无' });
       }
     });
-  };
-  const moduleList = ref([]);
-  const getModuleList = () => {
-    axios
-      .get('/controller/modules/list', {
-        params: { projectId: props.projectId },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          moduleList.value = resp.data;
-          moduleList.value.push({ id: 0, name: '无' });
-        }
-      });
-  };
-  onMounted(() => {
-    if (props.elementId !== 0) {
-      getElementInfo(props.elementId);
-    }
-    if (props.elementObj) {
-      element.value.eleType = props.elementObj.eleType;
-      element.value.eleValue = props.elementObj.eleValue;
-    }
-    getModuleList();
-  });
+};
+onMounted(() => {
+  if (props.elementId !== 0) {
+    getElementInfo(props.elementId);
+  }
+  if (props.elementObj) {
+    element.value.eleType = props.elementObj.eleType;
+    element.value.eleValue = props.elementObj.eleValue;
+  }
+  getModuleList();
+});
 </script>
 
 <template>

@@ -79,9 +79,9 @@
   import ElementUpdate from '@/components/ElementUpdate.vue';
   import Pageable from '@/components/Pageable.vue';
   import defaultLogo from '@/assets/logo.png';
-  import RenderDeviceName from '../../components/RenderDeviceName.vue';
   import AudioProcessor from '@/lib/audio-processor';
   import wifiLogo from '@/assets/img/wifi.png';
+  import RenderDeviceName from '../../components/RenderDeviceName.vue';
   import Scrcpy from './Scrcpy';
 
   const { toClipboard } = useClipboard();
@@ -1941,11 +1941,11 @@ v-if="dialogElement" :project-id="project['id']"
           </template>
           <div style="margin-right: 40px; text-align: center">
             <video
+              v-show="screenMode == 'Scrcpy'"
               id="scrcpy-video"
               style="display: inline-block; min-height: 100%"
               :style="canvasRectInfo"
               autoplay
-              v-show="screenMode == 'Scrcpy'"
               muted
               @mouseup="mouseup"
               @mousemove="mousemove"

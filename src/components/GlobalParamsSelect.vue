@@ -1,27 +1,27 @@
 <script setup>
-  import { ref } from 'vue';
-  import axios from '../http/axios';
+import { ref } from 'vue';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    label: String,
-    place: String,
-    projectId: Number,
-    step: Object,
-  });
-  const pageData = ref([]);
-  const getGlobalParamsList = (event) => {
-    if (event) {
-      axios
-        .get('/controller/globalParams/list', {
-          params: {
-            projectId: props.projectId,
-          },
-        })
-        .then((resp) => {
-          pageData.value = resp.data;
-        });
-    }
-  };
+const props = defineProps({
+  label: String,
+  place: String,
+  projectId: Number,
+  step: Object,
+});
+const pageData = ref([]);
+const getGlobalParamsList = (event) => {
+  if (event) {
+    axios
+      .get('/controller/globalParams/list', {
+        params: {
+          projectId: props.projectId,
+        },
+      })
+      .then((resp) => {
+        pageData.value = resp.data;
+      });
+  }
+};
 </script>
 
 <template>

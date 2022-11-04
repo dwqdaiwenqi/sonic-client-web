@@ -16,8 +16,8 @@
  */
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { router } from '../router/index.js';
 import { i18n, $tc } from '@/locales/setupI18n';
+import { router } from '../router/index.js';
 
 let baseURL = '';
 if (process.env.NODE_ENV === 'development') {

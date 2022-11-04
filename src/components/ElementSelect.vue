@@ -1,70 +1,70 @@
 <script setup>
-  import { ref, onMounted } from 'vue';
-  import axios from '../http/axios';
+import { ref, onMounted } from 'vue';
+import axios from '../http/axios';
 
-  const props = defineProps({
-    label: String,
-    place: String,
-    index: Number,
-    type: String,
-    projectId: Number,
-    step: Object,
-  });
-  const pageData = ref({
-    content: [],
-  });
-  const moduleId = ref(0);
-  const name = ref('');
-  const pageSize = ref(10);
-  const currentPage = ref(0);
-  const findByName = (n) => {
+const props = defineProps({
+  label: String,
+  place: String,
+  index: Number,
+  type: String,
+  projectId: Number,
+  step: Object,
+});
+const pageData = ref({
+  content: [],
+});
+const moduleId = ref(0);
+const name = ref('');
+const pageSize = ref(10);
+const currentPage = ref(0);
+const findByName = (n) => {
+  props.step.elements[props.index] = null;
+  name.value = n;
+  findByProjectIdAndEleType(true);
+};
+const findByProjectIdAndEleType = (event, pageNum, pSize) => {
+  if (event) {
     props.step.elements[props.index] = null;
-    name.value = n;
-    findByProjectIdAndEleType(true);
-  };
-  const findByProjectIdAndEleType = (event, pageNum, pSize) => {
-    if (event) {
-      props.step.elements[props.index] = null;
-      axios
-        .get('/controller/elements/list', {
-          params: {
-            name: name.value,
-            projectId: props.projectId,
-            moduleIds: [moduleId.value],
-            type: props.type,
-            page: pageNum || 1,
-            pageSize: pSize || pageSize.value,
-          },
-        })
-        .then((resp) => {
-          pageData.value = resp.data;
-          currentPage.value = pageData.value.number + 1;
-        });
-    }
-  };
-  const moduleList = ref([]);
-  const getModuleList = () => {
     axios
-      .get('/controller/modules/list', {
-        params: { projectId: props.projectId },
+      .get('/controller/elements/list', {
+        params: {
+          name: name.value,
+          projectId: props.projectId,
+          moduleIds: [moduleId.value],
+          type: props.type,
+          page: pageNum || 1,
+          pageSize: pSize || pageSize.value,
+        },
       })
       .then((resp) => {
-        if (resp.code === 2000) {
-          moduleList.value = resp.data;
-          moduleList.value.push({ id: 0, name: '无' });
-        }
+        pageData.value = resp.data;
+        currentPage.value = pageData.value.number + 1;
       });
-  };
-  const findByModule = (n) => {
-    props.step.elements[props.index] = null;
-    findByProjectIdAndEleType(true);
-  };
-  onMounted(() => {
-    if (props.step.elements[props.index]) {
-      pageData.value.content.push(props.step.elements[props.index]);
-    }
-    getModuleList();
-  });
+  }
+};
+const moduleList = ref([]);
+const getModuleList = () => {
+  axios
+    .get('/controller/modules/list', {
+      params: { projectId: props.projectId },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        moduleList.value = resp.data;
+        moduleList.value.push({ id: 0, name: '无' });
+      }
+    });
+};
+const findByModule = (n) => {
+  props.step.elements[props.index] = null;
+  findByProjectIdAndEleType(true);
+};
+onMounted(() => {
+  if (props.step.elements[props.index]) {
+    pageData.value.content.push(props.step.elements[props.index]);
+  }
+  getModuleList();
+});
 </script>
 
 <template>

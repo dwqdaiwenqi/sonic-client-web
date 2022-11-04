@@ -1,40 +1,40 @@
 <script setup>
-  import { watch, nextTick, ref } from 'vue';
-  import { Loading, CircleCheckFilled, CaretBottom } from '@element-plus/icons';
+import { watch, nextTick, ref } from 'vue';
+import { Loading, CircleCheckFilled, CaretBottom } from '@element-plus/icons';
 
-  const props = defineProps({
-    stepLog: Array,
-    debugLoading: Boolean,
-    isReadOnly: Boolean,
-    isDone: Boolean,
+const props = defineProps({
+  stepLog: Array,
+  debugLoading: Boolean,
+  isReadOnly: Boolean,
+  isDone: Boolean,
+});
+const emit = defineEmits(['clearLog', 'loadMore', 'stopStep']);
+const stopStep = () => {
+  emit('stopStep');
+};
+const clearLog = () => {
+  emit('clearLog');
+};
+const loadMore = () => {
+  emit('loadMore');
+};
+const stepLogScrollbar = ref(null);
+watch(props.stepLog, (newVal, oldVal) => {
+  nextTick(() => {
+    stepLogScrollbar.value.wrap.scrollTop =
+      stepLogScrollbar.value.wrap.scrollHeight;
   });
-  const emit = defineEmits(['clearLog', 'loadMore', 'stopStep']);
-  const stopStep = () => {
-    emit('stopStep');
-  };
-  const clearLog = () => {
-    emit('clearLog');
-  };
-  const loadMore = () => {
-    emit('loadMore');
-  };
-  const stepLogScrollbar = ref(null);
-  watch(props.stepLog, (newVal, oldVal) => {
-    nextTick(() => {
-      stepLogScrollbar.value.wrap.scrollTop =
-        stepLogScrollbar.value.wrap.scrollHeight;
-    });
-  });
-  const getTag = (status) => {
-    switch (status) {
-      case 3:
-        return 'warning';
-      case 4:
-        return 'danger';
-      default:
-        return '';
-    }
-  };
+});
+const getTag = (status) => {
+  switch (status) {
+    case 3:
+      return 'warning';
+    case 4:
+      return 'danger';
+    default:
+      return '';
+  }
+};
 </script>
 
 <template>
