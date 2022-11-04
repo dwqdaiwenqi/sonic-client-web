@@ -1,150 +1,156 @@
 <script setup>
-  import { useStore } from 'vuex';
-  import { useRoute, useRouter } from 'vue-router';
-  import { onBeforeMount, onMounted, ref, watch } from 'vue';
-  import { Fold, Expand , Cellphone, HomeFilled, Setting } from '@element-plus/icons';
-    import { ElMessage } from 'element-plus';
-  import { useI18n } from 'vue-i18n';
-  import useClipboard from 'vue-clipboard3';
-  import { localeList } from '@/config/locale';
-  import useLocale from '@/locales/useLocale';
-  import axios from '../http/axios';
-  import logo from "../assets/logo.png";
-  import ProjectUpdate from "./ProjectUpdate.vue";
-  import defaultLogo from '../assets/logo.png';
+import { useStore } from 'vuex';
+import { useRoute, useRouter } from 'vue-router';
+import { onBeforeMount, onMounted, ref, watch } from 'vue';
+import {
+  Fold,
+  Expand,
+  Cellphone,
+  HomeFilled,
+  Setting,
+} from '@element-plus/icons';
+import { ElMessage } from 'element-plus';
+import { useI18n } from 'vue-i18n';
+import useClipboard from 'vue-clipboard3';
+import { localeList } from '@/config/locale';
+import useLocale from '@/locales/useLocale';
+import axios from '../http/axios';
+import logo from '../assets/logo.png';
+import ProjectUpdate from './ProjectUpdate.vue';
+import defaultLogo from '../assets/logo.png';
 
-  const { toClipboard } = useClipboard();
+const { toClipboard } = useClipboard();
 
-  const changePwdForm = ref(null);
-  const changePwd = ref({
-    oldPwd: '',
-    newPwd: '',
-    newPwdSec: '',
-  });
-  const copy = (value) => {
-    try {
-      toClipboard(value);
-      ElMessage.success({
-        message: '复制成功！',
-      });
-    } catch (e) {
-      ElMessage.error({
-        message: '复制失败！',
-      });
+const changePwdForm = ref(null);
+const changePwd = ref({
+  oldPwd: '',
+  newPwd: '',
+  newPwdSec: '',
+});
+const copy = (value) => {
+  try {
+    toClipboard(value);
+    ElMessage.success({
+      message: '复制成功！',
+    });
+  } catch (e) {
+    ElMessage.error({
+      message: '复制失败！',
+    });
+  }
+};
+const validatePass = (rule, value, callback) => {
+  if (value === '') {
+    callback(new Error($t('form.notEmpty')));
+  } else {
+    if (changePwd.value.newPwd !== changePwd.value.newPwdSec) {
+      callback(new Error($t('form.differentInput')));
     }
-  };
-  const validatePass = (rule, value, callback) => {
-    if (value === '') {
-      callback(new Error($t('form.notEmpty')));
-    } else {
-      if (changePwd.value.newPwd !== changePwd.value.newPwdSec) {
-        callback(new Error($t('form.differentInput')));
-      }
-      callback();
-    }
-  };
-  const dialogChangePwd = ref(false);
-  const tokenNew = ref('');
-  watch(dialogChangePwd, (newValue, oldValue) => {
-    if (!newValue) {
-      changePwd.value = {
-        oldPwd: '',
-        newPwd: '',
-        newPwdSec: '',
-      };
-    }
-  });
-  const generateToken = () => {
-    axios
-      .get('/controller/users/generateToken', {
-        params: { day: day.value },
-      })
-      .then((resp) => {
-        if (resp.code === 2000) {
-          ElMessage.success({
-            message: resp.message,
-          });
-          tokenNew.value = resp.data;
-        }
-      });
-  };
-  const changePwdSummit = () => {
-    changePwdForm.value.validate((valid) => {
-      if (valid) {
-        axios
-          .put('/controller/users', {
-            oldPwd: changePwd.value.oldPwd,
-            newPwd: changePwd.value.newPwd,
-          })
-          .then((resp) => {
-            if (resp.code === 2000) {
-              ElMessage.success({
-                message: resp.message,
-              });
-              dialogChangePwd.value = false;
-            }
-          });
+    callback();
+  }
+};
+const dialogChangePwd = ref(false);
+const tokenNew = ref('');
+watch(dialogChangePwd, (newValue, oldValue) => {
+  if (!newValue) {
+    changePwd.value = {
+      oldPwd: '',
+      newPwd: '',
+      newPwdSec: '',
+    };
+  }
+});
+const generateToken = () => {
+  axios
+    .get('/controller/users/generateToken', {
+      params: { day: day.value },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        tokenNew.value = resp.data;
       }
     });
-  };
-  const dialogUserInfo = ref(false);
-  const dialogVisible = ref(false);
-  const dialogToken = ref(false);
-  const day = ref(14);
-  const store = useStore();
-  const router = useRouter();
-  const route = useRoute();
-  const projectData = ref([]);
-  const theme = ref('');
-  const flush = () => {
-    dialogVisible.value = false;
-    getProjectList();
-  };
-  const getProjectList = () => {
-    axios.get('/controller/projects/list').then((resp) => {
-      projectData.value = resp.data;
-      store.commit('saveProjectList', projectData.value);
-    });
-  };
-  const jump = (project) => {
-    store.commit('saveProject', project);
-    router.push({
-      path: `/Home/${  project.id  }/ProjectIndex`,
-    });
-  };
-  const pushIndex = (path) => {
-    router.push({
-      path,
-    });
-  };
-  const logout = () => {
-    store.commit('clearAuth');
-    router.replace({ path: '/Login' });
-  };
-  const goToUrl = (url) => {
-    window.open(url, '_blank');
-  };
-  const toggleClass = (t) => {
-    localStorage.setItem('SonicTheme', t);
-    store.commit('saveTheme', theme.value);
-    document.body.className = `sonic-${  t}`;
-  };
-  onBeforeMount(() => {
-    theme.value = localStorage.getItem('SonicTheme')
-      ? localStorage.getItem('SonicTheme')
-      : 'light';
+};
+const changePwdSummit = () => {
+  changePwdForm.value.validate((valid) => {
+    if (valid) {
+      axios
+        .put('/controller/users', {
+          oldPwd: changePwd.value.oldPwd,
+          newPwd: changePwd.value.newPwd,
+        })
+        .then((resp) => {
+          if (resp.code === 2000) {
+            ElMessage.success({
+              message: resp.message,
+            });
+            dialogChangePwd.value = false;
+          }
+        });
+    }
   });
-  onMounted(() => {
-    toggleClass(theme.value);
-    getProjectList();
+};
+const dialogUserInfo = ref(false);
+const dialogVisible = ref(false);
+const dialogToken = ref(false);
+const day = ref(14);
+const store = useStore();
+const router = useRouter();
+const route = useRoute();
+const projectData = ref([]);
+const theme = ref('');
+const flush = () => {
+  dialogVisible.value = false;
+  getProjectList();
+};
+const getProjectList = () => {
+  axios.get('/controller/projects/list').then((resp) => {
+    projectData.value = resp.data;
+    store.commit('saveProjectList', projectData.value);
   });
+};
+const jump = (project) => {
+  store.commit('saveProject', project);
+  router.push({
+    path: `/Home/${project.id}/ProjectIndex`,
+  });
+};
+const pushIndex = (path) => {
+  router.push({
+    path,
+  });
+};
+const logout = () => {
+  store.commit('clearAuth');
+  router.replace({ path: '/Login' });
+};
+const goToUrl = (url) => {
+  window.open(url, '_blank');
+};
+const toggleClass = (t) => {
+  localStorage.setItem('SonicTheme', t);
+  store.commit('saveTheme', theme.value);
+  document.body.className = `sonic-${t}`;
+};
+onBeforeMount(() => {
+  theme.value = localStorage.getItem('SonicTheme')
+    ? localStorage.getItem('SonicTheme')
+    : 'light';
+});
+onMounted(() => {
+  toggleClass(theme.value);
+  getProjectList();
+});
 
-  // 国际化设置
-  const { t: $t } = useI18n();
-  const changeLocaleHandler = function (val) {
-    const { changeLocale } = useLocale(store);
-    changeLocale(val.index);
-  };
+// 国际化设置
+const { t: $t } = useI18n();
+const changeLocaleHandler = function (val) {
+  const { changeLocale } = useLocale(store);
+  changeLocale(val.index);
+};
 </script>
 
 <template>
@@ -152,8 +158,12 @@
     <el-header>
       <div class="flex-center demo">
         <div
-v-if="route.params.projectId || route.fullPath.indexOf('/Setting') != -1" style="margin:0 20px;cursor:pointer"
-             @click="store.commit('changeCollapse')">
+          v-if="
+            route.params.projectId || route.fullPath.indexOf('/Setting') != -1
+          "
+          style="margin: 0 20px; cursor: pointer"
+          @click="store.commit('changeCollapse')"
+        >
           <el-icon
             v-if="store.state.isCollapse === false"
             :size="20"
@@ -161,7 +171,7 @@ v-if="route.params.projectId || route.fullPath.indexOf('/Setting') != -1" style=
           >
             <Fold />
           </el-icon>
-          <el-icon v-else :size="20" style="vertical-align: middle;">
+          <el-icon v-else :size="20" style="vertical-align: middle">
             <Expand />
           </el-icon>
         </div>
@@ -170,8 +180,9 @@ v-if="route.params.projectId || route.fullPath.indexOf('/Setting') != -1" style=
           placement="bottom"
         >
           <el-switch
-v-model="theme" style="margin-left: 15px;"
-                     :width="33"
+            v-model="theme"
+            style="margin-left: 15px"
+            :width="33"
             active-value="light"
             inactive-value="dark"
             active-color="#C0C4CC"
@@ -182,7 +193,9 @@ v-model="theme" style="margin-left: 15px;"
           ></el-switch>
         </el-tooltip>
         <el-menu
-:ellipsis="false" :background-color="store.state.menuBack" :text-color="store.state.menuText"
+          :ellipsis="false"
+          :background-color="store.state.menuBack"
+          :text-color="store.state.menuText"
           :active-text-color="store.state.menuActiveText"
           mode="horizontal"
           class="el-menu-horizontal-demo font"
@@ -190,7 +203,9 @@ v-model="theme" style="margin-left: 15px;"
           <el-sub-menu index="Language">
             <template #title>{{ $t('layout.languages') }}</template>
             <el-menu-item
-v-for="item in localeList" :key="item.event" :index="item.event"
+              v-for="item in localeList"
+              :key="item.event"
+              :index="item.event"
               @click="changeLocaleHandler"
               >{{ item.text }}
               <el-badge
@@ -214,8 +229,11 @@ v-for="item in localeList" :key="item.event" :index="item.event"
           :default-active="route.path"
         >
           <el-menu-item
-:index="route.params.projectId? '/Home/' + route.params.projectId + '/Devices':'/Index/Devices'"
-            
+            :index="
+              route.params.projectId
+                ? '/Home/' + route.params.projectId + '/Devices'
+                : '/Index/Devices'
+            "
             @click="
               pushIndex(
                 route.params.projectId
@@ -233,8 +251,14 @@ v-for="item in localeList" :key="item.event" :index="item.event"
             {{ $t('layout.deviceCenter') }}
           </el-menu-item>
           <el-menu-item
-v-if="route.params.projectId|| route.fullPath==='/Index/Devices' || route.fullPath.indexOf('/Setting') != -1" index="/Index"
-                        @click="pushIndex('/Index')">
+            v-if="
+              route.params.projectId ||
+              route.fullPath === '/Index/Devices' ||
+              route.fullPath.indexOf('/Setting') != -1
+            "
+            index="/Index"
+            @click="pushIndex('/Index')"
+          >
             <el-icon
               :size="18"
               style="vertical-align: middle; margin-right: 5px"
@@ -382,7 +406,7 @@ v-if="route.params.projectId|| route.fullPath==='/Index/Devices' || route.fullPa
             v-model="changePwd.oldPwd"
             prefix-icon="el-icon-lock"
             type="password"
-              show-password
+            show-password
             :placeholder="$t('form.inputOldPassword')"
           ></el-input>
         </el-form-item>
@@ -404,7 +428,8 @@ v-if="route.params.projectId|| route.fullPath==='/Index/Devices' || route.fullPa
           ></el-input>
         </el-form-item>
         <el-form-item
-prop="newPwdSec" :rules="{
+          prop="newPwdSec"
+          :rules="{
             validator: validatePass,
             trigger: 'blur',
           }"
