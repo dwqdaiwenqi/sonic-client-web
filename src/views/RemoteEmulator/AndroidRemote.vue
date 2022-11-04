@@ -1,705 +1,709 @@
 <script setup>
-/*
- *  Copyright (C) [SonicCloudOrg] Sonic Project
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-import {useRoute, useRouter} from 'vue-router';
-import {computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch} from 'vue';
-import {useStore} from 'vuex';
-import axios from '@/http/axios';
-import {ElMessage} from 'element-plus';
-import useClipboard from 'vue-clipboard3';
-import ColorImg from '@/components/ColorImg.vue';
-import StepList from '@/components/StepList.vue';
-import TestCaseList from '@/components/TestCaseList.vue';
-import StepLog from '@/components/StepLog.vue';
-import ElementUpdate from '@/components/ElementUpdate.vue';
-import Pageable from '@/components/Pageable.vue';
-import defaultLogo from '@/assets/logo.png';
-import {
-  Headset,
-  MoreFilled,
-  FullScreen,
-  Edit,
-  HelpFilled,
-  HomeFilled,
-  Coin,
-  List,
-  Picture,
-  VideoPause,
-  Refresh,
-  Connection,
-  Delete,
-  Place,
-  Download,
-  Search,
-  SwitchButton,
-  Position,
-  Pointer,
-  Camera,
-  Sunny,
-  Phone,
-  PhoneFilled,
-  Minus,
-  MuteNotification,
-  Plus,
-  CaretRight,
-  CaretLeft,
-  Operation,
-  Cellphone,
-  Menu,
-  CopyDocument,
-  House,
-  Share,
-  Back,
-  View,
-  InfoFilled,
-  Bell,
-  Service,
-  VideoCamera,
-  Postcard
-} from '@element-plus/icons';
-import RenderDeviceName from '../../components/RenderDeviceName.vue';
-import AudioProcessor from '@/lib/audio-processor';
-import wifiLogo from '@/assets/img/wifi.png';
-import Scrcpy from './Scrcpy';
+  /*
+   *  Copyright (C) [SonicCloudOrg] Sonic Project
+   *
+   *  Licensed under the Apache License, Version 2.0 (the "License");
+   *  you may not use this file except in compliance with the License.
+   *  You may obtain a copy of the License at
+   *
+   *         http://www.apache.org/licenses/LICENSE-2.0
+   *
+   *  Unless required by applicable law or agreed to in writing, software
+   *  distributed under the License is distributed on an "AS IS" BASIS,
+   *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   *  See the License for the specific language governing permissions and
+   *  limitations under the License.
+   *
+   */
+  import { useRoute, useRouter } from 'vue-router';
+  import {
+    computed,
+    nextTick,
+    onBeforeMount,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+  } from 'vue';
+  import { useStore } from 'vuex';
+  import { ElMessage } from 'element-plus';
+  import useClipboard from 'vue-clipboard3';
+  import {
+    Headset,
+    MoreFilled,
+    FullScreen,
+    Edit,
+    HelpFilled,
+    HomeFilled,
+    Coin,
+    List,
+    Picture,
+    VideoPause,
+    Refresh,
+    Connection,
+    Delete,
+    Place,
+    Download,
+    Search,
+    SwitchButton,
+    Position,
+    Pointer,
+    Camera,
+    Sunny,
+    Phone,
+    PhoneFilled,
+    Minus,
+    MuteNotification,
+    Plus,
+    CaretRight,
+    CaretLeft,
+    Operation,
+    Cellphone,
+    Menu,
+    CopyDocument,
+    House,
+    Share,
+    Back,
+    View,
+    InfoFilled,
+    Bell,
+    Service,
+    VideoCamera,
+    Postcard,
+  } from '@element-plus/icons';
+  import axios from '@/http/axios';
+  import ColorImg from '@/components/ColorImg.vue';
+  import StepList from '@/components/StepList.vue';
+  import TestCaseList from '@/components/TestCaseList.vue';
+  import StepLog from '@/components/StepLog.vue';
+  import ElementUpdate from '@/components/ElementUpdate.vue';
+  import Pageable from '@/components/Pageable.vue';
+  import defaultLogo from '@/assets/logo.png';
+  import RenderDeviceName from '../../components/RenderDeviceName.vue';
+  import AudioProcessor from '@/lib/audio-processor';
+  import wifiLogo from '@/assets/img/wifi.png';
+  import Scrcpy from './Scrcpy';
 
-const {toClipboard} = useClipboard();
-const route = useRoute();
-const store = useStore();
-const router = useRouter();
-const isShowPocoImg = ref(false);
-const wifiList = ref([]);
-const currentWifi = ref('');
-const isConnectWifi = ref(false);
-const remoteAppiumPort = ref(0);
-const selectPocoType = ref("");
-const pocoLoading = ref(false)
-const pocoData = ref([])
-const proxyWebPort = ref(0);
-const proxyConnPort = ref(0);
-const filterAppText = ref('');
-const iFrameHeight = ref(0);
-const terminalHeight = ref(0);
-const caseList = ref(null);
-const loading = ref(false);
-const driverLoading = ref(false)
-const appList = ref([]);
-const device = ref({});
-const agent = ref({});
-const screenUrls = ref([]);
-const uploadUrl = ref('');
-const text = ref({content: ''});
-const pocoTypeList = ref([
-  {
-    name: 'Unity3d',
-    value: 'Unity3d',
-    img: 'Unity'
-  },
-  {
-    name: 'Egret',
-    value: 'Egret',
-    img: 'Egret'
-  },
-  {
-    name: 'UE4',
-    value: 'UE4',
-    img: 'UE4'
-  },
-  {
-    name: 'Cocos2dx-js',
-    value: 'Cocos2dx-js',
-    img: 'Cocos2dx'
-  },
-  {
-    name: 'Cocos2dx-lua',
-    value: 'Cocos2dx-lua',
-    img: 'Cocos2dx'
-  },
-  {
-    name: 'cocos-creator',
-    value: 'cocos-creator',
-    img: 'Cocos2dx'
-  },
-  {
-    name: 'Cocos2dx-c++',
-    value: 'Cocos2dx-c++',
-    img: 'Cocos2dx'
-  },
-])
-const isAudoInit = ref('0')
-let imgWidth = 0;
-let imgHeight = 0;
-// 旋转状态 // 0 90 180 270
-let directionStatus = {
-  value: -1,
-};
-let moveX = 0;
-let moveY = 0;
-let isFixTouch = false;
-let isPress = false;
-let loop = null;
-let time = 0;
-let isLongPress = false;
-let mouseMoveTime = 0;
-let touchWrapper = null;
-const pic = ref('高');
-const _screenMode = window.localStorage.getItem('screenMode');
-const screenMode = ref(_screenMode || 'Scrcpy'); // Scrcpy,Minicap
-const elementLoading = ref(false);
-const isShowImg = ref(false);
-const isDriverFinish = ref(false);
-const imgUrl = ref('');
-const activity = ref('');
-const webViewData = ref([]);
-const isShowTree = ref(false);
-const elementData = ref([]);
-const elementDetail = ref(null);
-const elementScreenLoading = ref(false);
-const pocoDetail = ref(null);
-const tree = ref(null);
-const pocoTree = ref(null)
-const currentId = ref([]);
-const filterText = ref('');
-const project = ref(null);
-const testCase = ref({});
-const activeTab = ref('main');
-const activeTab2 = ref('step');
-const stepLog = ref([]);
-const currentPocoId = ref([])
-const debugLoading = ref(false);
-const dialogElement = ref(false);
-const dialogImgElement = ref(false);
-const imgElementUrl = ref(null);
-const updateImgEle = ref(null);
-const webViewListDetail = ref([]);
-const chromePort = ref(0);
-const isWebView = ref(true);
-const iframeUrl = ref('');
-const title = ref('');
-const webViewLoading = ref(false);
-const cmdInput = ref('');
-const cmdOutPut = ref([]);
-const cmdUser = ref('');
-const logcatOutPut = ref([]);
-const terScroll = ref(null);
-const logcatScroll = ref(null);
-const cmdIsDone = ref(true);
-const uploadLoading = ref(false);
-const remoteAdbUrl = ref('');
-const logcatFilter = ref({
-  level: 'E',
-  filter: '',
-});
-let oldBlob = undefined;
-const element = ref({
-  id: null,
-  moduleId: 0,
-  eleName: '',
-  eleType: 'image',
-  eleValue: '',
-  projectId: 0,
-});
-const computedCenter = (b1, b2) => {
-  let x1 = b1.substring(0, b1.indexOf(','));
-  let y1 = b1.substring(b1.indexOf(',') + 1);
-  let x2 = b2.substring(0, b2.indexOf(','));
-  let y2 = b2.substring(b2.indexOf(',') + 1);
-  let x = parseInt((parseInt(x2) + parseInt(x1)) / 2);
-  let y = parseInt((parseInt(y1) + parseInt(y2)) / 2);
-  return x + ',' + y;
-};
-const switchTabs = (e) => {
-  if (e.props.name === 'proxy') {
-    getWifiList();
-  }
-  if (e.props.name === 'apps') {
-    if (appList.value.length === 0) {
-      refreshAppList();
-    }
-  }
-  if (e.props.name === 'terminal') {
-    terminalHeight.value = document.getElementById('pressKey').offsetTop - 200;
-  }
-  if (e.props.name === 'webview') {
-    if (webViewListDetail.value.length === 0) {
-      getWebViewForward();
-    }
-  }
-};
-const img = import.meta.globEager('../../assets/img/*');
-let websocket = null;
-let screenWebsocket = null;
-let __Scrcpy = null; // 实例
-let terminalWebsocket = null;
-
-defineProps({
-  tabPosition: String,
-  canvasRectInfo: Object,
-  layoutSplitInfo: Object,
-  isSplitPressing: Boolean,
-  lineMouseup: Function,
-  lineMousemove: Function,
-  lineMousedown: Function,
-  lineMouseleave: Function,
-});
-
-const tabWebView = (port, id, transTitle) => {
-  title.value = transTitle;
-  isWebView.value = false;
-  iframeUrl.value =
-      'http://' + agent.value['host'] + ':' + chromePort.value
-      + '/devtools/inspector.html?ws=' + agent.value['host']
-      + ':' + agent.value['port'] + '/websockets/webView/'
-      + agent.value['secretKey'] + '/' + port + '/' + id;
-  nextTick(() => {
-    iFrameHeight.value = document.body.clientHeight - 280;
+  const { toClipboard } = useClipboard();
+  const route = useRoute();
+  const store = useStore();
+  const router = useRouter();
+  const isShowPocoImg = ref(false);
+  const wifiList = ref([]);
+  const currentWifi = ref('');
+  const isConnectWifi = ref(false);
+  const remoteAppiumPort = ref(0);
+  const selectPocoType = ref('');
+  const pocoLoading = ref(false);
+  const pocoData = ref([]);
+  const proxyWebPort = ref(0);
+  const proxyConnPort = ref(0);
+  const filterAppText = ref('');
+  const iFrameHeight = ref(0);
+  const terminalHeight = ref(0);
+  const caseList = ref(null);
+  const loading = ref(false);
+  const driverLoading = ref(false);
+  const appList = ref([]);
+  const device = ref({});
+  const agent = ref({});
+  const screenUrls = ref([]);
+  const uploadUrl = ref('');
+  const text = ref({ content: '' });
+  const pocoTypeList = ref([
+    {
+      name: 'Unity3d',
+      value: 'Unity3d',
+      img: 'Unity',
+    },
+    {
+      name: 'Egret',
+      value: 'Egret',
+      img: 'Egret',
+    },
+    {
+      name: 'UE4',
+      value: 'UE4',
+      img: 'UE4',
+    },
+    {
+      name: 'Cocos2dx-js',
+      value: 'Cocos2dx-js',
+      img: 'Cocos2dx',
+    },
+    {
+      name: 'Cocos2dx-lua',
+      value: 'Cocos2dx-lua',
+      img: 'Cocos2dx',
+    },
+    {
+      name: 'cocos-creator',
+      value: 'cocos-creator',
+      img: 'Cocos2dx',
+    },
+    {
+      name: 'Cocos2dx-c++',
+      value: 'Cocos2dx-c++',
+      img: 'Cocos2dx',
+    },
+  ]);
+  const isAudoInit = ref('0');
+  let imgWidth = 0;
+  let imgHeight = 0;
+  // 旋转状态 // 0 90 180 270
+  const directionStatus = {
+    value: -1,
+  };
+  let moveX = 0;
+  let moveY = 0;
+  let isFixTouch = false;
+  let isPress = false;
+  let loop = null;
+  let time = 0;
+  let isLongPress = false;
+  let mouseMoveTime = 0;
+  let touchWrapper = null;
+  const pic = ref('高');
+  const _screenMode = window.localStorage.getItem('screenMode');
+  const screenMode = ref(_screenMode || 'Scrcpy'); // Scrcpy,Minicap
+  const elementLoading = ref(false);
+  const isShowImg = ref(false);
+  const isDriverFinish = ref(false);
+  const imgUrl = ref('');
+  const activity = ref('');
+  const webViewData = ref([]);
+  const isShowTree = ref(false);
+  const elementData = ref([]);
+  const elementDetail = ref(null);
+  const elementScreenLoading = ref(false);
+  const pocoDetail = ref(null);
+  const tree = ref(null);
+  const pocoTree = ref(null);
+  const currentId = ref([]);
+  const filterText = ref('');
+  const project = ref(null);
+  const testCase = ref({});
+  const activeTab = ref('main');
+  const activeTab2 = ref('step');
+  const stepLog = ref([]);
+  const currentPocoId = ref([]);
+  const debugLoading = ref(false);
+  const dialogElement = ref(false);
+  const dialogImgElement = ref(false);
+  const imgElementUrl = ref(null);
+  const updateImgEle = ref(null);
+  const webViewListDetail = ref([]);
+  const chromePort = ref(0);
+  const isWebView = ref(true);
+  const iframeUrl = ref('');
+  const title = ref('');
+  const webViewLoading = ref(false);
+  const cmdInput = ref('');
+  const cmdOutPut = ref([]);
+  const cmdUser = ref('');
+  const logcatOutPut = ref([]);
+  const terScroll = ref(null);
+  const logcatScroll = ref(null);
+  const cmdIsDone = ref(true);
+  const uploadLoading = ref(false);
+  const remoteAdbUrl = ref('');
+  const logcatFilter = ref({
+    level: 'E',
+    filter: '',
   });
-};
-const saveEle = () => {
-  updateImgEle['value'].validate((valid) => {
-    if (valid) {
-      element.value.eleType = 'image';
-      element.value.eleValue = imgElementUrl.value;
-      element.value.projectId = project.value['id'];
-      axios.put('/controller/elements', element.value)
-          .then((resp) => {
-            if (resp['code'] === 2000) {
-              ElMessage.success({
-                message: resp['message'],
-              });
-              dialogImgElement.value = false;
-            }
-          });
-    }
+  let oldBlob;
+  const element = ref({
+    id: null,
+    moduleId: 0,
+    eleName: '',
+    eleType: 'image',
+    eleValue: '',
+    projectId: 0,
   });
-};
-/**
- * app列表处理
- */
-const appListPageData = ref([]);
-const currAppListPageIndex = ref(0);
-const currAppListPageData = ref([]);
-// 转换分页数组
-const transformPageable = (data) => {
-  const pageSize = 7;
-  const len = data.length;
-  let start = 0;
-  let end = pageSize;
-  // 重置分页数组
-  appListPageData.value = [];
-  while (end <= len) {
-    appListPageData.value.push(data.slice(start, end));
-    start = end;
-    end += pageSize;
-  }
-  if (len % pageSize) {
-    appListPageData.value.push(data.slice(start, len));
-  }
-  currAppListPageData.value = appListPageData.value[currAppListPageIndex.value];
-};
-const changeAppListPage = (pageNum) => {
-  currAppListPageIndex.value = pageNum - 1;
-  currAppListPageData.value = appListPageData.value[currAppListPageIndex.value];
-};
-const filterTableData = computed(() => {
-  const list = appList.value.filter(
+  const computedCenter = (b1, b2) => {
+    const x1 = b1.substring(0, b1.indexOf(','));
+    const y1 = b1.substring(b1.indexOf(',') + 1);
+    const x2 = b2.substring(0, b2.indexOf(','));
+    const y2 = b2.substring(b2.indexOf(',') + 1);
+    const x = parseInt((parseInt(x2) + parseInt(x1)) / 2);
+    const y = parseInt((parseInt(y1) + parseInt(y2)) / 2);
+    return `${x  },${  y}`;
+  };
+  const switchTabs = (e) => {
+    if (e.props.name === 'proxy') {
+      getWifiList();
+    }
+    if (e.props.name === 'apps') {
+      if (appList.value.length === 0) {
+        refreshAppList();
+      }
+    }
+    if (e.props.name === 'terminal') {
+      terminalHeight.value =
+        document.getElementById('pressKey').offsetTop - 200;
+    }
+    if (e.props.name === 'webview') {
+      if (webViewListDetail.value.length === 0) {
+        getWebViewForward();
+      }
+    }
+  };
+  const img = import.meta.globEager('../../assets/img/*');
+  let websocket = null;
+  let screenWebsocket = null;
+  let __Scrcpy = null; // 实例
+  let terminalWebsocket = null;
+
+  defineProps({
+    tabPosition: String,
+    canvasRectInfo: Object,
+    layoutSplitInfo: Object,
+    isSplitPressing: Boolean,
+    lineMouseup: Function,
+    lineMousemove: Function,
+    lineMousedown: Function,
+    lineMouseleave: Function,
+  });
+
+  const tabWebView = (port, id, transTitle) => {
+    title.value = transTitle;
+    isWebView.value = false;
+    iframeUrl.value =
+      `http://${  agent.value.host  }:${  chromePort.value
+       }/devtools/inspector.html?ws=${  agent.value.host
+       }:${  agent.value.port  }/websockets/webView/${
+       agent.value.secretKey  }/${  port  }/${  id}`;
+    nextTick(() => {
+      iFrameHeight.value = document.body.clientHeight - 280;
+    });
+  };
+  const saveEle = () => {
+    updateImgEle.value.validate((valid) => {
+      if (valid) {
+        element.value.eleType = 'image';
+        element.value.eleValue = imgElementUrl.value;
+        element.value.projectId = project.value.id;
+        axios.put('/controller/elements', element.value).then((resp) => {
+          if (resp.code === 2000) {
+            ElMessage.success({
+              message: resp.message,
+            });
+            dialogImgElement.value = false;
+          }
+        });
+      }
+    });
+  };
+  /**
+   * app列表处理
+   */
+  const appListPageData = ref([]);
+  const currAppListPageIndex = ref(0);
+  const currAppListPageData = ref([]);
+  // 转换分页数组
+  const transformPageable = (data) => {
+    const pageSize = 7;
+    const len = data.length;
+    let start = 0;
+    let end = pageSize;
+    // 重置分页数组
+    appListPageData.value = [];
+    while (end <= len) {
+      appListPageData.value.push(data.slice(start, end));
+      start = end;
+      end += pageSize;
+    }
+    if (len % pageSize) {
+      appListPageData.value.push(data.slice(start, len));
+    }
+    currAppListPageData.value =
+      appListPageData.value[currAppListPageIndex.value];
+  };
+  const changeAppListPage = (pageNum) => {
+    currAppListPageIndex.value = pageNum - 1;
+    currAppListPageData.value =
+      appListPageData.value[currAppListPageIndex.value];
+  };
+  const filterTableData = computed(() => {
+    const list = appList.value.filter(
       (data) =>
-          !filterAppText.value ||
-          data.appName.toLowerCase().includes(filterAppText.value.toLowerCase()) ||
-          data.packageName.toLowerCase().includes(filterAppText.value.toLowerCase()),
-  );
-  transformPageable(list);
-  return list;
-});
-const fixTouch = () => {
-  ElMessage.success({
-    message: '修复成功！',
+        !filterAppText.value ||
+        data.appName
+          .toLowerCase()
+          .includes(filterAppText.value.toLowerCase()) ||
+        data.packageName
+          .toLowerCase()
+          .includes(filterAppText.value.toLowerCase())
+    );
+    transformPageable(list);
+    return list;
   });
-  isFixTouch = !isFixTouch;
-};
-const fixOri = () => {
-  ElMessage.success({
-    message: '修复成功！',
-  });
-  if (directionStatus.value === 0 || directionStatus.value === 180) {
-    directionStatus.value = 90
-  } else {
-    directionStatus.value = 0
-  }
-}
-const switchIsWebView = () => {
-  isWebView.value = true;
-};
-const selectCase = (val) => {
-  ElMessage.success({
-    message: '关联成功！',
-  });
-  testCase.value = val;
-};
-const removeCase = () => {
-  testCase.value = {};
-};
-const getImg = (name) => {
-  let result;
-  if (name === 'meizu') {
-    name = 'Meizu'
-  }
-  if (name === 'LENOVO') {
-    name = 'Lenovo'
-  }
-  try {
-    result = img['../../assets/img/' + name + '.jpg'].default;
-  } catch {
-    result = img['../../assets/img/unName.jpg'].default;
-  }
-  return result;
-};
-watch(filterText, (newValue, oldValue) => {
-  tree['value'].filter(newValue);
-});
-const filterNode = (value, data) => {
-  if (!value) return true;
-  return (data.label.indexOf(value) !== -1) ||
-      (data.detail['resource-id'] ? data.detail['resource-id'].indexOf(value) !== -1 : false);
-};
-const findBestXpath = (elementDetail) => {
-  let result = [];
-  if (elementDetail['resource-id']) {
-    result.push('//' + elementDetail['class']
-        + '[@resource-id=\'' + elementDetail['resource-id'] + '\']');
-  }
-  if (elementDetail['text']) {
-    result.push('//' + elementDetail['class']
-        + '[@text=\'' + elementDetail['text'] + '\']');
-    result.push('//' + elementDetail['class']
-        + '[contains(@text,\'' + elementDetail['text'] + '\')]');
-  }
-  if (elementDetail['content-desc']) {
-    result.push('//' + elementDetail['class']
-        + '[@content-desc=\'' + elementDetail['content-desc'] + '\']');
-    result.push('//' + elementDetail['class']
-        + '[contains(@content-desc,\'' + elementDetail['content-desc'] + '\')]');
-  }
-  return result;
-};
-const downloadImg = (url) => {
-  let time = new Date().getTime();
-  let link = document.createElement('a');
-  fetch(url).then(res => res.blob()).then(blob => {
-    link.href = URL.createObjectURL(blob);
-    link.download = time + '.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  });
-};
-const copy = (value) => {
-  try {
-    toClipboard(value);
+  const fixTouch = () => {
     ElMessage.success({
-      message: '复制成功！',
+      message: '修复成功！',
     });
-  } catch (e) {
-    ElMessage.error({
-      message: '复制失败！',
+    isFixTouch = !isFixTouch;
+  };
+  const fixOri = () => {
+    ElMessage.success({
+      message: '修复成功！',
     });
-  }
-};
-const toAddElement = (eleType, eleValue) => {
-  if (project) {
-    element.value.eleType = eleType
-    element.value.eleValue = eleValue
-    dialogElement.value = true
-  }
-
-}
-const removeScreen = () => {
-  screenUrls.value = [];
-};
-const getVideoScreenshot = () => {
-  const canvas = document.createElement("canvas");
-  const canvasCtx = canvas.getContext("2d");
-  const video = document.getElementById('scrcpy-video');
-  // 默认生成图片大小
-  let w, h;
-  if (directionStatus.value === 0 || directionStatus.value === 180) {
-    if (screenMode.value == 'Scrcpy') {
-      w = imgWidth;
-      h = imgHeight
+    if (directionStatus.value === 0 || directionStatus.value === 180) {
+      directionStatus.value = 90;
     } else {
-      w = 369;
-      h = 800;
+      directionStatus.value = 0;
     }
-  } else {
-    if (screenMode.value == 'Scrcpy') {
+  };
+  const switchIsWebView = () => {
+    isWebView.value = true;
+  };
+  const selectCase = (val) => {
+    ElMessage.success({
+      message: '关联成功！',
+    });
+    testCase.value = val;
+  };
+  const removeCase = () => {
+    testCase.value = {};
+  };
+  const getImg = (name) => {
+    let result;
+    if (name === 'meizu') {
+      name = 'Meizu';
+    }
+    if (name === 'LENOVO') {
+      name = 'Lenovo';
+    }
+    try {
+      result = img[`../../assets/img/${  name  }.jpg`].default;
+    } catch {
+      result = img['../../assets/img/unName.jpg'].default;
+    }
+    return result;
+  };
+  watch(filterText, (newValue, oldValue) => {
+    tree.value.filter(newValue);
+  });
+  const filterNode = (value, data) => {
+    if (!value) return true;
+    return (
+      data.label.indexOf(value) !== -1 ||
+      (data.detail['resource-id']
+        ? data.detail['resource-id'].indexOf(value) !== -1
+        : false)
+    );
+  };
+  const findBestXpath = (elementDetail) => {
+    const result = [];
+    if (elementDetail['resource-id']) {
+      result.push(
+        `//${ 
+          elementDetail.class 
+          }[@resource-id='${ 
+          elementDetail['resource-id'] 
+          }']`
+      );
+    }
+    if (elementDetail.text) {
+      result.push(
+        `//${ 
+          elementDetail.class 
+          }[@text='${ 
+          elementDetail.text 
+          }']`
+      );
+      result.push(
+        `//${ 
+          elementDetail.class 
+          }[contains(@text,'${ 
+          elementDetail.text 
+          }')]`
+      );
+    }
+    if (elementDetail['content-desc']) {
+      result.push(
+        `//${ 
+          elementDetail.class 
+          }[@content-desc='${ 
+          elementDetail['content-desc'] 
+          }']`
+      );
+      result.push(
+        `//${ 
+          elementDetail.class 
+          }[contains(@content-desc,'${ 
+          elementDetail['content-desc'] 
+          }')]`
+      );
+    }
+    return result;
+  };
+  const downloadImg = (url) => {
+    const time = new Date().getTime();
+    const link = document.createElement('a');
+    fetch(url)
+      .then((res) => res.blob())
+      .then((blob) => {
+        link.href = URL.createObjectURL(blob);
+        link.download = `${time  }.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+  };
+  const copy = (value) => {
+    try {
+      toClipboard(value);
+      ElMessage.success({
+        message: '复制成功！',
+      });
+    } catch (e) {
+      ElMessage.error({
+        message: '复制失败！',
+      });
+    }
+  };
+  const toAddElement = (eleType, eleValue) => {
+    if (project.value) {
+      element.value.eleType = eleType;
+      element.value.eleValue = eleValue;
+      dialogElement.value = true;
+    }
+  };
+  const removeScreen = () => {
+    screenUrls.value = [];
+  };
+  const getVideoScreenshot = () => {
+    const canvas = document.createElement('canvas');
+    const canvasCtx = canvas.getContext('2d');
+    const video = document.getElementById('scrcpy-video');
+    // 默认生成图片大小
+    let w; let h;
+    if (directionStatus.value === 0 || directionStatus.value === 180) {
+      if (screenMode.value == 'Scrcpy') {
+        w = imgWidth;
+        h = imgHeight;
+      } else {
+        w = 369;
+        h = 800;
+      }
+    } else if (screenMode.value == 'Scrcpy') {
       w = imgHeight;
       h = imgWidth
     } else {
       w = 800;
       h = 369;
     }
-  }
-  canvas.width = w;
-  canvas.height = h;
-  canvasCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, w, h);
-  return canvas.toDataURL('image/png', 1);
-}
-const quickCap = () => {
-  let imageUrl;
-  if (oldBlob) {
-    const blob = new Blob([oldBlob], {type: 'image/jpeg'});
-    const URL = window.URL || window.webkitURL;
-    imageUrl = URL.createObjectURL(blob);
-  } else {
-    imageUrl = getVideoScreenshot()
-  }
-  const img = new Image();
-  screenUrls.value.push(imageUrl);
-  img.src = imageUrl;
-};
-const setPocoImgData = () => {
-  let imageUrl;
-  if (oldBlob) {
-    const blob = new Blob([oldBlob], {type: 'image/jpeg'});
-    const URL = window.URL || window.webkitURL;
-    imageUrl = URL.createObjectURL(blob);
-  } else {
-    imageUrl = getVideoScreenshot()
-  }
-  const img = new Image();
-  img.src = imageUrl;
-  imgUrl.value = imageUrl;
-  const canvasPoco = document.getElementById('debugPocoPic');
-  img.onload = function () {
-    canvasPoco.width = img.width;
-    canvasPoco.height = img.height;
-  };
-  isShowPocoImg.value = true;
-};
-const setImgData = () => {
-  let imageUrl;
-  if (oldBlob) {
-    const blob = new Blob([oldBlob], {type: 'image/jpeg'});
-    const URL = window.URL || window.webkitURL;
-    imageUrl = URL.createObjectURL(blob);
-  } else {
-    imageUrl = getVideoScreenshot()
-  }
-  const img = new Image();
-  img.src = imageUrl;
-  imgUrl.value = imageUrl;
-  const canvas = document.getElementById('debugPic');
-  img.onload = function () {
-    canvas.width = img.width;
-    canvas.height = img.height;
-  };
-  isShowImg.value = true;
-};
-const openSocket = (host, port, key, udId) => {
-  if ('WebSocket' in window) {
-    //
-    websocket = new WebSocket(
-        'ws://' + host + ':' + port + '/websockets/android/' + key + '/' + udId + '/' + localStorage.getItem('SonicToken') + '/' + isAudoInit.value,
+    canvas.width = w;
+    canvas.height = h;
+    canvasCtx.drawImage(
+      video,
+      0,
+      0,
+      video.videoWidth,
+      video.videoHeight,
+      0,
+      0,
+      w,
+      h
     );
-    //
-    __Scrcpy = new Scrcpy({
-      socketURL: 'ws://' + host + ':' + port + '/websockets/android/screen/' + key + '/' + udId + '/' + localStorage.getItem('SonicToken'),
-      node: 'scrcpy-video',
-      onmessage: screenWebsocketOnmessage,
-      excuteMode: screenMode.value
-    });
-    screenWebsocket = __Scrcpy.websocket;
-    changeScreenMode(screenMode.value, 1)
-    //
-    terminalWebsocket = new WebSocket(
-        'ws://' + host + ':' + port + '/websockets/android/terminal/' + key + '/' + udId + '/' + localStorage.getItem('SonicToken'),
-    );
-  } else {
-    console.error('不支持WebSocket');
-  }
-  websocket.onmessage = websocketOnmessage;
-  websocket.onclose = (e) => {
+    return canvas.toDataURL('image/png', 1);
   };
-  terminalWebsocket.onmessage = terminalWebsocketOnmessage;
-  terminalWebsocket.onclose = (e) => {
+  const quickCap = () => {
+    let imageUrl;
+    if (oldBlob) {
+      const blob = new Blob([oldBlob], { type: 'image/jpeg' });
+      const URL = window.URL || window.webkitURL;
+      imageUrl = URL.createObjectURL(blob);
+    } else {
+      imageUrl = getVideoScreenshot();
+    }
+    const img = new Image();
+    screenUrls.value.push(imageUrl);
+    img.src = imageUrl;
   };
-  if (isAudoInit.value === '1') {
-    driverLoading.value = true
-  }
-};
-const changeAutoInit = (t) => {
-  if (t) {
-    localStorage.setItem('SonicAndroidIsAutoInit', t);
-  }
-}
-const sendLogcat = () => {
-  terminalWebsocket.send(
+  const setPocoImgData = () => {
+    let imageUrl;
+    if (oldBlob) {
+      const blob = new Blob([oldBlob], { type: 'image/jpeg' });
+      const URL = window.URL || window.webkitURL;
+      imageUrl = URL.createObjectURL(blob);
+    } else {
+      imageUrl = getVideoScreenshot();
+    }
+    const img = new Image();
+    img.src = imageUrl;
+    imgUrl.value = imageUrl;
+    const canvasPoco = document.getElementById('debugPocoPic');
+    img.onload = function () {
+      canvasPoco.width = img.width;
+      canvasPoco.height = img.height;
+    };
+    isShowPocoImg.value = true;
+  };
+  const setImgData = () => {
+    let imageUrl;
+    if (oldBlob) {
+      const blob = new Blob([oldBlob], { type: 'image/jpeg' });
+      const URL = window.URL || window.webkitURL;
+      imageUrl = URL.createObjectURL(blob);
+    } else {
+      imageUrl = getVideoScreenshot();
+    }
+    const img = new Image();
+    img.src = imageUrl;
+    imgUrl.value = imageUrl;
+    const canvas = document.getElementById('debugPic');
+    img.onload = function () {
+      canvas.width = img.width;
+      canvas.height = img.height;
+    };
+    isShowImg.value = true;
+  };
+  const openSocket = (host, port, key, udId) => {
+    if ('WebSocket' in window) {
+      //
+      websocket = new WebSocket(
+        `ws://${  host  }:${  port  }/websockets/android/${  key  }/${  udId  }/${  localStorage.getItem('SonicToken')  }/${  isAudoInit.value}`,
+      );
+      //
+      __Scrcpy = new Scrcpy({
+        socketURL:
+          `ws://${ 
+          host 
+          }:${ 
+          port 
+          }/websockets/android/screen/${ 
+          key 
+          }/${ 
+          udId 
+          }/${ 
+          localStorage.getItem('SonicToken')}`,
+        node: 'scrcpy-video',
+        onmessage: screenWebsocketOnmessage,
+        excuteMode: screenMode.value,
+      });
+      screenWebsocket = __Scrcpy.websocket;
+      changeScreenMode(screenMode.value, 1);
+      //
+      terminalWebsocket = new WebSocket(
+        `ws://${  host  }:${  port  }/websockets/android/terminal/${  key  }/${  udId  }/${  localStorage.getItem('SonicToken')}`,
+      );
+    } else {
+      console.error('不支持WebSocket');
+    }
+    websocket.onmessage = websocketOnmessage;
+    websocket.onclose = (e) => {};
+    terminalWebsocket.onmessage = terminalWebsocketOnmessage;
+    terminalWebsocket.onclose = (e) => {};
+    if (isAudoInit.value === '1') {
+      driverLoading.value = true;
+    }
+  };
+  const changeAutoInit = (t) => {
+    if (t) {
+      localStorage.setItem('SonicAndroidIsAutoInit', t);
+    }
+  };
+  const sendLogcat = () => {
+    terminalWebsocket.send(
       JSON.stringify({
         type: 'logcat',
         level: logcatFilter.value.level,
         filter: logcatFilter.value.filter,
-      }),
-  );
-};
-const getWifiList = () => {
-  terminalWebsocket.send(
+      })
+    );
+  };
+  const getWifiList = () => {
+    terminalWebsocket.send(
       JSON.stringify({
         type: 'wifiList',
-      }),
-  );
-};
-const clearLogcat = () => {
-  logcatOutPut.value = [];
-};
-const stopLogcat = () => {
-  terminalWebsocket.send(
+      })
+    );
+  };
+  const clearLogcat = () => {
+    logcatOutPut.value = [];
+  };
+  const stopLogcat = () => {
+    terminalWebsocket.send(
       JSON.stringify({
         type: 'stopLogcat',
-      }),
-  );
-};
-const sendCmd = () => {
-  if (cmdInput.value.length > 0 && cmdIsDone.value === true) {
-    cmdIsDone.value = false;
-    cmdOutPut.value.push(JSON.parse(JSON.stringify(
-        '<span style=\'color: #409EFF\'>' + cmdUser.value + '</span>:/ $ ' + cmdInput.value)));
-    terminalWebsocket.send(
+      })
+    );
+  };
+  const sendCmd = () => {
+    if (cmdInput.value.length > 0 && cmdIsDone.value === true) {
+      cmdIsDone.value = false;
+      cmdOutPut.value.push(
+        JSON.parse(
+          JSON.stringify(
+        `<span style='color: #409EFF'>${  cmdUser.value  }</span>:/ $ ${  cmdInput.value}`)));
+      terminalWebsocket.send(
         JSON.stringify({
           type: 'command',
           detail: cmdInput.value,
-        }),
-    );
-    cmdInput.value = '';
-  }
-};
-const clearCmd = () => {
-  cmdOutPut.value = [];
-};
-const stopCmd = () => {
-  cmdIsDone.value = true;
-  terminalWebsocket.send(
+        })
+      );
+      cmdInput.value = '';
+    }
+  };
+  const clearCmd = () => {
+    cmdOutPut.value = [];
+  };
+  const stopCmd = () => {
+    cmdIsDone.value = true;
+    terminalWebsocket.send(
       JSON.stringify({
         type: 'stopCmd',
-      }),
-  );
-};
-const terminalWebsocketOnmessage = (message) => {
-  switch (JSON.parse(message.data)['msg']) {
-    case 'wifiListDetail': {
-      isConnectWifi.value = JSON.parse(message.data).detail.isConnectWifi;
-      currentWifi.value = JSON.parse(message.data).detail.connectedWifi.SSID;
-      break;
-    }
-    case 'appListDetail': {
-      appList.value.push(JSON.parse(message.data).detail);
-      break;
-    }
-    case 'logcat':
-      logcatOutPut.value.push('连接成功！');
-      break;
-    case 'logcatResp':
-      logcatOutPut.value.push(
-          JSON.parse(message.data)['detail']
-              .replace(/ I /g, '<span style=\'color: #0d84ff\'> I </span>')
-              .replace(/ V /g, '<span style=\'color: #0d84ff\'> I </span>')
-              .replace(/ D /g, '<span style=\'color: #0d84ff\'> D </span>')
-              .replace(/ W /g, '<span style=\'color: #E6A23C\'> W </span>')
-              .replace(/ E /g, '<span style=\'color: #F56C6C\'> E </span>')
-              .replace(/ F /g, '<span style=\'color: #F56C6C\'> F </span>'),
-      );
-      nextTick(() => {
-        logcatScroll['value'].wrap.scrollTop =
-            logcatScroll['value'].wrap.scrollHeight;
-      });
-      break;
-    case 'terminal':
-      cmdUser.value = JSON.parse(message.data)['user'];
-      cmdOutPut.value.push('连接成功！');
-      break;
-    case 'terResp':
-      cmdOutPut.value.push(JSON.parse(message.data)['detail']);
-      nextTick(() => {
-        terScroll['value'].wrap.scrollTop =
-            terScroll['value'].wrap.scrollHeight;
-      });
-      break;
-    case 'terDone':
-      cmdIsDone.value = true;
-      break;
-    case 'error':
-      ElMessage.error({
-        message: '系统出现异常！已断开远程控制！',
-      });
-      close();
-      router.go(-1);
-      break;
-  }
-};
-const screenWebsocketOnmessage = (message) => {
-  // console.log('screenWebsocketOnmessage', message.data);
-  if (typeof message.data === 'object') {
-    oldBlob = message.data;
-    const blob = new Blob([message.data], {type: 'image/jpeg'});
-    const URL = window.URL || window.webkitURL;
-    const img = new Image();
-    const canvas = document.getElementById('canvas'),
-        g = canvas.getContext('2d');
-    img.onload = function () {
-      // 不根据按钮组，使用数据源的分辨率点对点
-      const width = img.width, height = img.height;
-      canvas.width = width;
-      canvas.height = height;
-      g.drawImage(img, 0, 0, width, height);
-    };
-    const u = URL.createObjectURL(blob);
-    img.src = u;
-  } else {
-    switch (JSON.parse(message.data)['msg']) {
-      case 'rotation': {
-        if (directionStatus.value !== -1) {
-          loading.value = true;
-          ElMessage.success({
-            message: '检测到屏幕旋转！请稍后...',
-          });
-        }
-        directionStatus.value = JSON.parse(message.data).value; // TODO
-        // 旋转需要重置一下jmuxer
-        if (screenMode.value == 'Scrcpy') {
-          // 重置播放器
-          __Scrcpy.jmuxer && __Scrcpy.jmuxer.reset()
-        }
+      })
+    );
+  };
+  const terminalWebsocketOnmessage = (message) => {
+    switch (JSON.parse(message.data).msg) {
+      case 'wifiListDetail': {
+        isConnectWifi.value = JSON.parse(message.data).detail.isConnectWifi;
+        currentWifi.value = JSON.parse(message.data).detail.connectedWifi.SSID;
         break;
       }
-      case 'support': {
-        ElMessage.error({
-          message: JSON.parse(message.data).text,
+      case 'appListDetail': {
+        appList.value.push(JSON.parse(message.data).detail);
+        break;
+      }
+      case 'logcat':
+        logcatOutPut.value.push('连接成功！');
+        break;
+      case 'logcatResp':
+        logcatOutPut.value.push(
+          JSON.parse(message.data)
+            .detail.replace(
+              / I /g,
+              "<span style='color: #0d84ff'> I </span>"
+            )
+            .replace(/ V /g, "<span style='color: #0d84ff'> I </span>")
+            .replace(/ D /g, "<span style='color: #0d84ff'> D </span>")
+            .replace(/ W /g, "<span style='color: #E6A23C'> W </span>")
+            .replace(/ E /g, "<span style='color: #F56C6C'> E </span>")
+            .replace(/ F /g, "<span style='color: #F56C6C'> F </span>")
+        );
+        nextTick(() => {
+          logcatScroll.value.wrap.scrollTop =
+            logcatScroll.value.wrap.scrollHeight;
         });
-        loading.value = false;
         break;
-      }
-      case 'size': {
-        imgWidth = JSON.parse(message.data).width;
-        imgHeight = JSON.parse(message.data).height;
-        loading.value = false;
+      case 'terminal':
+        cmdUser.value = JSON.parse(message.data).user;
+        cmdOutPut.value.push('连接成功！');
         break;
-      }
-      case 'picFinish': {
-        loading.value = false;
+      case 'terResp':
+        cmdOutPut.value.push(JSON.parse(message.data).detail);
+        nextTick(() => {
+          terScroll.value.wrap.scrollTop =
+            terScroll.value.wrap.scrollHeight;
+        });
         break;
-      }
+      case 'terDone':
+        cmdIsDone.value = true;
+        break;
       case 'error':
         ElMessage.error({
           message: '系统出现异常！已断开远程控制！',
@@ -708,270 +712,329 @@ const screenWebsocketOnmessage = (message) => {
         router.go(-1);
         break;
     }
-  }
-};
-const websocketOnmessage = (message) => {
-  switch (JSON.parse(message.data)['msg']) {
-    case 'poco': {
-      pocoLoading.value = false;
-      let result = JSON.parse(message.data).result
-      if (result) {
-        ElMessage.success({
-          message: '获取Poco控件成功！',
+  };
+  const screenWebsocketOnmessage = (message) => {
+    // console.log('screenWebsocketOnmessage', message.data);
+    if (typeof message.data === 'object') {
+      oldBlob = message.data;
+      const blob = new Blob([message.data], { type: 'image/jpeg' });
+      const URL = window.URL || window.webkitURL;
+      const img = new Image();
+      const canvas = document.getElementById('canvas');
+        const g = canvas.getContext('2d');
+      img.onload = function () {
+        // 不根据按钮组，使用数据源的分辨率点对点
+        const {width} = img;
+          const {height} = img;
+        canvas.width = width;
+        canvas.height = height;
+        g.drawImage(img, 0, 0, width, height);
+      };
+      const u = URL.createObjectURL(blob);
+      img.src = u;
+    } else {
+      switch (JSON.parse(message.data).msg) {
+        case 'rotation': {
+          if (directionStatus.value !== -1) {
+            loading.value = true;
+            ElMessage.success({
+              message: '检测到屏幕旋转！请稍后...',
+            });
+          }
+          directionStatus.value = JSON.parse(message.data).value; // TODO
+          // 旋转需要重置一下jmuxer
+          if (screenMode.value == 'Scrcpy') {
+            // 重置播放器
+            __Scrcpy.jmuxer && __Scrcpy.jmuxer.reset();
+          }
+          break;
+        }
+        case 'support': {
+          ElMessage.error({
+            message: JSON.parse(message.data).text,
+          });
+          loading.value = false;
+          break;
+        }
+        case 'size': {
+          imgWidth = JSON.parse(message.data).width;
+          imgHeight = JSON.parse(message.data).height;
+          loading.value = false;
+          break;
+        }
+        case 'picFinish': {
+          loading.value = false;
+          break;
+        }
+        case 'error':
+          ElMessage.error({
+            message: '系统出现异常！已断开远程控制！',
+          });
+          close();
+          router.go(-1);
+          break;
+      }
+    }
+  };
+  const websocketOnmessage = (message) => {
+    switch (JSON.parse(message.data).msg) {
+      case 'poco': {
+        pocoLoading.value = false;
+        const {result} = JSON.parse(message.data);
+        if (result) {
+          ElMessage.success({
+            message: '获取Poco控件成功！',
+          });
+          pocoData.value = [];
+          pocoData.value.push(result);
+          setPocoTreeId(pocoData.value, treeId);
+          currentPocoId.value = [1];
+        } else {
+          ElMessage.error({
+            message:
+              '获取POCO控件失败！请确保已经打开对应游戏引擎并接入Poco-SDK',
+          });
+        }
+        break;
+      }
+      case 'proxyResult': {
+        proxyWebPort.value = JSON.parse(message.data).webPort;
+        proxyConnPort.value = JSON.parse(message.data).port;
+        nextTick(() => {
+          iFrameHeight.value = document.body.clientHeight - 280;
         });
-        pocoData.value = []
-        pocoData.value.push(result)
-        setPocoTreeId(pocoData.value, treeId)
-        currentPocoId.value = [1];
-      } else {
+        break;
+      }
+      case 'pullResult': {
+        pullLoading.value = false;
+        if (JSON.parse(message.data).status === 'success') {
+          ElMessage.success({
+            message: '拉取文件成功！',
+          });
+          pullResult.value = JSON.parse(message.data).url;
+        } else {
+          ElMessage.error({
+            message: '拉取文件失败！',
+          });
+        }
+        break;
+      }
+      case 'pushResult': {
+        pushLoading.value = false;
+        if (JSON.parse(message.data).status === 'success') {
+          ElMessage.success({
+            message: '上传文件成功！',
+          });
+        } else {
+          ElMessage.error({
+            message: '上传文件失败！上传目录需要补齐文件名',
+          });
+        }
+        break;
+      }
+      case 'appiumPort': {
+        remoteAppiumPort.value = JSON.parse(message.data).port;
+        break;
+      }
+      case 'adbkit': {
+        if (JSON.parse(message.data).isEnable) {
+          remoteAdbUrl.value =
+            `${agent.value.host  }:${  JSON.parse(message.data).port}`;
+        }
+        break;
+      }
+      case 'tree': {
+        ElMessage.success({
+          message: '获取原生控件元素成功！',
+        });
+        const result = JSON.parse(message.data);
+        currentId.value = [1];
+        elementData.value = result.detail;
+        isShowTree.value = true;
+        elementLoading.value = false;
+        webViewData.value = result.webView;
+        activity.value = result.activity;
+        break;
+      }
+      case 'treeFail': {
         ElMessage.error({
-          message: '获取POCO控件失败！请确保已经打开对应游戏引擎并接入Poco-SDK',
+          message: '获取控件元素失败！请重新获取',
         });
+        elementLoading.value = false;
+        break;
       }
-      break
-    }
-    case 'proxyResult': {
-      proxyWebPort.value = JSON.parse(message.data).webPort;
-      proxyConnPort.value = JSON.parse(message.data).port;
-      nextTick(() => {
-        iFrameHeight.value = document.body.clientHeight - 280;
-      });
-      break;
-    }
-    case 'pullResult': {
-      pullLoading.value = false
-      if (JSON.parse(message.data).status === 'success') {
-        ElMessage.success({
-          message: '拉取文件成功！',
+      case 'installFinish': {
+        if (JSON.parse(message.data).status === 'success') {
+          ElMessage.success({
+            message: '安装成功！',
+          });
+        } else {
+          ElMessage.error({
+            message: '安装失败！',
+          });
+        }
+        break;
+      }
+      case 'uninstallFinish': {
+        if (JSON.parse(message.data).detail === 'success') {
+          ElMessage.success({
+            message: '卸载成功！',
+          });
+        } else {
+          ElMessage.error({
+            message: '卸载失败！',
+          });
+        }
+        break;
+      }
+      case 'openDriver': {
+        ElMessage({
+          type: JSON.parse(message.data).status,
+          message: JSON.parse(message.data).detail,
         });
-        pullResult.value = JSON.parse(message.data).url
-      } else {
+        driverLoading.value = false;
+        if (JSON.parse(message.data).status === 'success') {
+          isDriverFinish.value = true;
+        }
+        break;
+      }
+      case 'step': {
+        setStepLog(JSON.parse(message.data));
+        break;
+      }
+      case 'status': {
+        debugLoading.value = false;
+        ElMessage.info({
+          message: '运行完毕！',
+        });
+        break;
+      }
+      case 'forwardView': {
+        webViewLoading.value = false;
+        ElMessage.success({
+          message: '获取成功！',
+        });
+        webViewListDetail.value = JSON.parse(message.data).detail;
+        chromePort.value = JSON.parse(message.data).chromePort;
+        break;
+      }
+      case 'eleScreen': {
+        if (JSON.parse(message.data).img) {
+          ElMessage.success({
+            message: '获取快照成功！',
+          });
+          imgElementUrl.value = JSON.parse(message.data).img;
+          dialogImgElement.value = true;
+        } else {
+          ElMessage.error(JSON.parse(message.data).errMsg);
+        }
+        elementScreenLoading.value = false;
+        break;
+      }
+      case 'error': {
         ElMessage.error({
-          message: '拉取文件失败！',
+          message: '系统出现异常！已断开远程控制！',
         });
+        close();
+        router.go(-1);
+        break;
       }
-      break;
     }
-    case 'pushResult': {
-      pushLoading.value = false
-      if (JSON.parse(message.data).status === 'success') {
-        ElMessage.success({
-          message: '上传文件成功！',
-        });
-      } else {
-        ElMessage.error({
-          message: '上传文件失败！上传目录需要补齐文件名',
-        });
-      }
-      break;
-    }
-    case 'appiumPort': {
-      remoteAppiumPort.value = JSON.parse(message.data).port;
-      break;
-    }
-    case 'adbkit': {
-      if (JSON.parse(message.data).isEnable) {
-        remoteAdbUrl.value = agent.value['host'] + ':' + JSON.parse(message.data).port;
-      }
-      break;
-    }
-    case 'tree': {
-      ElMessage.success({
-        message: '获取原生控件元素成功！',
-      });
-      let result = JSON.parse(message.data);
-      currentId.value = [1];
-      elementData.value = result.detail;
-      isShowTree.value = true;
-      elementLoading.value = false;
-      webViewData.value = result['webView'];
-      activity.value = result['activity'];
-      break;
-    }
-    case 'treeFail': {
-      ElMessage.error({
-        message: '获取控件元素失败！请重新获取',
-      });
-      elementLoading.value = false;
-      break;
-    }
-    case 'installFinish': {
-      if (JSON.parse(message.data).status === 'success') {
-        ElMessage.success({
-          message: '安装成功！',
-        });
-      } else {
-        ElMessage.error({
-          message: '安装失败！',
-        });
-      }
-      break;
-    }
-    case 'uninstallFinish': {
-      if (JSON.parse(message.data).detail === 'success') {
-        ElMessage.success({
-          message: '卸载成功！',
-        });
-      } else {
-        ElMessage.error({
-          message: '卸载失败！',
-        });
-      }
-      break;
-    }
-    case 'openDriver': {
-      ElMessage({
-        type: JSON.parse(message.data).status,
-        message: JSON.parse(message.data).detail,
-      });
-      driverLoading.value = false
-      if (JSON.parse(message.data).status === 'success') {
-        isDriverFinish.value = true;
-      }
-      break;
-    }
-    case 'step': {
-      setStepLog(JSON.parse(message.data));
-      break;
-    }
-    case 'status': {
-      debugLoading.value = false;
-      ElMessage.info({
-        message: '运行完毕！',
-      });
-      break;
-    }
-    case 'forwardView': {
-      webViewLoading.value = false;
-      ElMessage.success({
-        message: '获取成功！',
-      });
-      webViewListDetail.value = JSON.parse(message.data)['detail'];
-      chromePort.value = JSON.parse(message.data)['chromePort'];
-      break;
-    }
-    case 'eleScreen': {
-      if (JSON.parse(message.data).img) {
-        ElMessage.success({
-          message: '获取快照成功！',
-        });
-        imgElementUrl.value = JSON.parse(message.data)['img'];
-        dialogImgElement.value = true;
-      } else {
-        ElMessage.error(JSON.parse(message.data)['errMsg']);
-      }
-      elementScreenLoading.value = false;
-      break;
-    }
-    case 'error': {
-      ElMessage.error({
-        message: '系统出现异常！已断开远程控制！',
-      });
-      close();
-      router.go(-1);
-      break;
-    }
-  }
-};
-const openDriver = () => {
-  driverLoading.value = true
-  websocket.send(
+  };
+  const openDriver = () => {
+    driverLoading.value = true;
+    websocket.send(
       JSON.stringify({
         type: 'debug',
-        detail: 'openDriver'
-      }),
-  );
-}
-const getCurLocation = () => {
-  let x, y;
-  let _x, _y;
-  const canvas = touchWrapper;
-  const rect = canvas.getBoundingClientRect();
-  if (directionStatus.value != 0 && directionStatus.value != 180) { // 左右旋转
-    _x = parseInt(
-        (event.clientY - rect.top) *
-        (imgWidth / canvas.clientHeight),
+        detail: 'openDriver',
+      })
     );
-    x = (directionStatus.value == 90) ? imgWidth - _x : _x;
-    //
-    _y = parseInt(
-        (event.clientX - rect.left) *
-        (imgHeight / canvas.clientWidth),
-    );
-    y = (directionStatus.value == 270) ? imgHeight - _y : _y;
-  } else {
-    _x = parseInt(
-        (event.clientX - rect.left) *
-        (imgWidth / canvas.clientWidth),
-    );
-    x = (directionStatus.value == 180) ? imgWidth - _x : _x;
-    //
-    _y = parseInt(
-        (event.clientY - rect.top) *
-        (imgHeight / canvas.clientHeight),
-    );
-    y = (directionStatus.value == 180) ? imgHeight - _y : _y;
-  }
-  // console.log('xy', { x, y });
-  return ({
-    x, y,
-  });
-};
-const mouseup = (event) => {
-  if (!isFixTouch) {
-    if (isPress) {
-      isPress = false;
-      websocket.send(
+  };
+  const getCurLocation = () => {
+    let x; let y;
+    let _x; let _y;
+    const canvas = touchWrapper;
+    const rect = canvas.getBoundingClientRect();
+    if (directionStatus.value != 0 && directionStatus.value != 180) {
+      // 左右旋转
+      _x = parseInt(
+        (event.clientY - rect.top) * (imgWidth / canvas.clientHeight)
+      );
+      x = directionStatus.value == 90 ? imgWidth - _x : _x;
+      //
+      _y = parseInt(
+        (event.clientX - rect.left) * (imgHeight / canvas.clientWidth)
+      );
+      y = directionStatus.value == 270 ? imgHeight - _y : _y;
+    } else {
+      _x = parseInt(
+        (event.clientX - rect.left) * (imgWidth / canvas.clientWidth)
+      );
+      x = directionStatus.value == 180 ? imgWidth - _x : _x;
+      //
+      _y = parseInt(
+        (event.clientY - rect.top) * (imgHeight / canvas.clientHeight)
+      );
+      y = directionStatus.value == 180 ? imgHeight - _y : _y;
+    }
+    // console.log('xy', { x, y });
+    return {
+      x,
+      y,
+    };
+  };
+  const mouseup = (event) => {
+    if (!isFixTouch) {
+      if (isPress) {
+        isPress = false;
+        websocket.send(
           JSON.stringify({
             type: 'touch',
             detail: 'u 0\n',
-          }),
-      );
-    }
-  } else {
-    clearInterval(loop);
-    time = 0;
-    const canvas = touchWrapper;
-    const rect = canvas.getBoundingClientRect();
-    let x;
-    let y;
-    x = parseInt(
-        (event.clientX - rect.left) *
-        (imgWidth / canvas.clientWidth),
-    );
-    y = parseInt(
-        (event.clientY - rect.top) *
-        (imgHeight / canvas.clientHeight),
-    );
-    if (moveX === x && moveY === y) {
-      if (!isLongPress) {
-        websocket.send(
-            JSON.stringify({
-              type: 'debug',
-              detail: 'tap',
-              point: x + ',' + y,
-            }),
+          })
         );
       }
     } else {
-      websocket.send(
+      clearInterval(loop);
+      time = 0;
+      const canvas = touchWrapper;
+      const rect = canvas.getBoundingClientRect();
+      let x;
+      let y;
+      x = parseInt(
+        (event.clientX - rect.left) * (imgWidth / canvas.clientWidth)
+      );
+      y = parseInt(
+        (event.clientY - rect.top) * (imgHeight / canvas.clientHeight)
+      );
+      if (moveX === x && moveY === y) {
+        if (!isLongPress) {
+          websocket.send(
+            JSON.stringify({
+              type: 'debug',
+              detail: 'tap',
+              point: `${x  },${  y}`,
+            })
+          );
+        }
+      } else {
+        websocket.send(
           JSON.stringify({
             type: 'debug',
             detail: 'swipe',
-            pointA: moveX + ',' + moveY,
-            pointB: x + ',' + y,
-          }),
-      );
+            pointA: `${moveX  },${  moveY}`,
+            pointB: `${x  },${  y}`,
+          })
+        );
+      }
+      isLongPress = false;
     }
-    isLongPress = false;
-  }
-};
-const mouseleave = () => {
-  if (isFixTouch) {
-    clearInterval(loop);
-    isLongPress = false;
-  } else {
-    if (isPress) {
+  };
+  const mouseleave = () => {
+    if (isFixTouch) {
+      clearInterval(loop);
+      isLongPress = false;
+    } else if (isPress) {
       isPress = false;
       websocket.send(
           JSON.stringify({
@@ -980,57 +1043,55 @@ const mouseleave = () => {
           }),
       );
     }
-  }
-};
-const mousedown = (event) => {
-  const canvas = touchWrapper;
-  const rect = canvas.getBoundingClientRect();
-  if (!isFixTouch) { // 安卓高版本
-    const {x, y} = getCurLocation();
-    isPress = true;
-    websocket.send(
+  };
+  const mousedown = (event) => {
+    const canvas = touchWrapper;
+    const rect = canvas.getBoundingClientRect();
+    if (!isFixTouch) {
+      // 安卓高版本
+      const { x, y } = getCurLocation();
+      isPress = true;
+      websocket.send(
         JSON.stringify({
           type: 'touch',
-          detail: 'd 0 ' + x + ' ' + y + ' 50\n',
-        }),
-    );
-  } else {
-    moveX = parseInt(
-        (event.clientX - rect.left) *
-        (imgWidth / canvas.clientWidth),
-    );
-    moveY = parseInt(
-        (event.clientY - rect.top) *
-        (imgHeight / canvas.clientHeight),
-    );
-    clearInterval(loop);
-    loop = setInterval(() => {
-      time += 500;
-      if (time >= 1000 && isLongPress === false) {
-        websocket.send(
+          detail: `d 0 ${  x  } ${  y  } 50\n`,
+        })
+      );
+    } else {
+      moveX = parseInt(
+        (event.clientX - rect.left) * (imgWidth / canvas.clientWidth)
+      );
+      moveY = parseInt(
+        (event.clientY - rect.top) * (imgHeight / canvas.clientHeight)
+      );
+      clearInterval(loop);
+      loop = setInterval(() => {
+        time += 500;
+        if (time >= 1000 && isLongPress === false) {
+          websocket.send(
             JSON.stringify({
               type: 'debug',
               detail: 'longPress',
-              point: moveX + ',' + moveY,
-            }),
-        );
-        isLongPress = true;
-      }
-    }, 500);
-  }
-};
-const mousemove = (event) => {
+              point: `${moveX  },${  moveY}`,
+            })
+          );
+          isLongPress = true;
+        }
+      }, 500);
+    }
+  };
+  const mousemove = (event) => {
   if (!isFixTouch) {
     if (isPress) {
       if (mouseMoveTime < 1) {
         mouseMoveTime++;
-        return;
+        
       } else {
         const {x, y} = getCurLocation();
         websocket.send(
             JSON.stringify({
               type: 'touch',
-              detail: 'm 0 ' + x + ' ' + y + ' 50\n',
+              detail: `m 0 ${  x  } ${  y  } 50\n`,
             }),
         );
         mouseMoveTime = 0;
@@ -1038,744 +1099,790 @@ const mousemove = (event) => {
     }
   }
 };
-const touchstart = async (event) => {
-  const debugPic = document.getElementById('debugPic');
-  const rect = debugPic.getBoundingClientRect();
-  let x;
-  let y;
-  if (directionStatus.value === 0 || directionStatus.value === 180) {
-    x = parseInt(
-        (event.clientX - rect.left) * (imgWidth / debugPic.clientWidth),
-    );
-    y = parseInt(
-        (event.clientY - rect.top) * (imgHeight / debugPic.clientHeight),
-    );
-  } else {
-    x = parseInt(
-        (event.clientX - rect.left) * (imgHeight / debugPic.clientWidth),
-    );
-    y = parseInt(
-        (event.clientY - rect.top) * (imgWidth / debugPic.clientHeight),
-    );
-  }
-  await nextTick(() => {
-    tree['value'].setCurrentKey(
-        findMinSize(findElementByPoint(elementData.value, x, y)),
-    );
-  });
-  await handleNodeClick(tree['value'].getCurrentNode());
-};
-const touchstartpoco = async (event) => {
-  const debugPic = document.getElementById('debugPocoPic');
-  const rect = debugPic.getBoundingClientRect();
-  let x;
-  let y;
-  if (directionStatus.value === 0 || directionStatus.value === 180) {
-    x = parseInt(
-        (event.clientX - rect.left) * (imgWidth / debugPic.clientWidth),
-    );
-    y = parseInt(
-        (event.clientY - rect.top) * (imgHeight / debugPic.clientHeight),
-    );
-  } else {
-    x = parseInt(
-        (event.clientX - rect.left) * (imgHeight / debugPic.clientWidth),
-    );
-    y = parseInt(
-        (event.clientY - rect.top) * (imgWidth / debugPic.clientHeight),
-    );
-  }
-  await nextTick(() => {
-    pocoTree['value'].setCurrentKey(
-        findPocoMinSize(findPocoByPoint(pocoData.value, x, y)),
-    );
-  });
-  await handlePocoClick(pocoTree['value'].getCurrentNode());
-};
-const findPocoMinSize = (data) => {
-  if (data.length === 0) {
-    return null;
-  }
-  let result = data[0];
-  for (let i in data) {
-    if (data[i].size === result.size) {
-      result = data[i];
+  const touchstart = async (event) => {
+    const debugPic = document.getElementById('debugPic');
+    const rect = debugPic.getBoundingClientRect();
+    let x;
+    let y;
+    if (directionStatus.value === 0 || directionStatus.value === 180) {
+      x = parseInt(
+        (event.clientX - rect.left) * (imgWidth / debugPic.clientWidth)
+      );
+      y = parseInt(
+        (event.clientY - rect.top) * (imgHeight / debugPic.clientHeight)
+      );
+    } else {
+      x = parseInt(
+        (event.clientX - rect.left) * (imgHeight / debugPic.clientWidth)
+      );
+      y = parseInt(
+        (event.clientY - rect.top) * (imgWidth / debugPic.clientHeight)
+      );
     }
-    if (data[i].size < result.size) {
-      result = data[i];
+    await nextTick(() => {
+      tree.value.setCurrentKey(
+        findMinSize(findElementByPoint(elementData.value, x, y))
+      );
+    });
+    await handleNodeClick(tree.value.getCurrentNode());
+  };
+  const touchstartpoco = async (event) => {
+    const debugPic = document.getElementById('debugPocoPic');
+    const rect = debugPic.getBoundingClientRect();
+    let x;
+    let y;
+    if (directionStatus.value === 0 || directionStatus.value === 180) {
+      x = parseInt(
+        (event.clientX - rect.left) * (imgWidth / debugPic.clientWidth)
+      );
+      y = parseInt(
+        (event.clientY - rect.top) * (imgHeight / debugPic.clientHeight)
+      );
+    } else {
+      x = parseInt(
+        (event.clientX - rect.left) * (imgHeight / debugPic.clientWidth)
+      );
+      y = parseInt(
+        (event.clientY - rect.top) * (imgWidth / debugPic.clientHeight)
+      );
     }
-  }
-  currentPocoId.value = [result.ele.id];
-  return result.ele.id;
-};
-const findMinSize = (data) => {
-  if (data.length === 0) {
-    return null;
-  }
-  let result = data[0];
-  for (let i in data) {
-    if (data[i].size === result.size) {
-      if (data[i].ele.detail.text.length !== 0) {
+    await nextTick(() => {
+      pocoTree.value.setCurrentKey(
+        findPocoMinSize(findPocoByPoint(pocoData.value, x, y))
+      );
+    });
+    await handlePocoClick(pocoTree.value.getCurrentNode());
+  };
+  const findPocoMinSize = (data) => {
+    if (data.length === 0) {
+      return null;
+    }
+    let result = data[0];
+    for (const i in data) {
+      if (data[i].size === result.size) {
+        result = data[i];
+      }
+      if (data[i].size < result.size) {
         result = data[i];
       }
     }
-    if (data[i].size < result.size) {
-      result = data[i];
+    currentPocoId.value = [result.ele.id];
+    return result.ele.id;
+  };
+  const findMinSize = (data) => {
+    if (data.length === 0) {
+      return null;
     }
-  }
-  currentId.value = [result.ele.id];
-  return result.ele.id;
-};
-const findPocoByPoint = (ele, x, y) => {
-  let result = [];
-  for (let i in ele) {
-    let eleStartX;
-    let eleStartY;
-    let eleEndX;
-    let eleEndY;
-    if (directionStatus.value === 0 || directionStatus.value === 180) {
-      eleStartX = ele[i].payload.pos[0] * imgWidth - (ele[i].payload.size[0] * imgWidth / 2)
-      eleStartY = ele[i].payload.pos[1] * imgHeight - (ele[i].payload.size[1] * imgHeight / 2)
-      eleEndX = ele[i].payload.pos[0] * imgWidth + (ele[i].payload.size[0] * imgWidth / 2)
-      eleEndY = ele[i].payload.pos[1] * imgHeight + (ele[i].payload.size[1] * imgHeight / 2)
-    } else {
-      eleStartX = ele[i].payload.pos[0] * imgHeight - (ele[i].payload.size[0] * imgHeight / 2)
-      eleStartY = ele[i].payload.pos[1] * imgWidth - (ele[i].payload.size[1] * imgWidth / 2)
-      eleEndX = ele[i].payload.pos[0] * imgHeight + (ele[i].payload.size[0] * imgHeight / 2)
-      eleEndY = ele[i].payload.pos[1] * imgWidth + (ele[i].payload.size[1] * imgWidth / 2)
-    }
-    if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
-      result.push({
-        ele: ele[i],
-        size: (eleEndX - eleStartX) * (eleEndY - eleStartY)
-      });
-    }
-    if (ele[i].children) {
-      let childrenResult = findPocoByPoint(ele[i].children, x, y);
-      if (childrenResult.length > 0) {
-        result.push.apply(result, childrenResult);
+    let result = data[0];
+    for (const i in data) {
+      if (data[i].size === result.size) {
+        if (data[i].ele.detail.text.length !== 0) {
+          result = data[i];
+        }
+      }
+      if (data[i].size < result.size) {
+        result = data[i];
       }
     }
-  }
-  return result;
-};
-const findElementByPoint = (ele, x, y) => {
-  let result = [];
-  for (let i in ele) {
-    const eleStartX = ele[i].detail['bStart'].substring(
-        0,
-        ele[i].detail['bStart'].indexOf(','),
-    );
-    const eleStartY = ele[i].detail['bStart'].substring(
-        ele[i].detail['bStart'].indexOf(',') + 1,
-    );
-    const eleEndX = ele[i].detail['bEnd'].substring(
-        0,
-        ele[i].detail['bEnd'].indexOf(','),
-    );
-    const eleEndY = ele[i].detail['bEnd'].substring(
-        ele[i].detail['bEnd'].indexOf(',') + 1,
-    );
-    if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
-      result.push({
-        ele: ele[i],
-        size: (eleEndY - eleStartY) * (eleEndX - eleStartX),
-      });
-    }
-    if (ele[i].children) {
-      let childrenResult = findElementByPoint(ele[i].children, x, y);
-      if (childrenResult.length > 0) {
-        result.push.apply(result, childrenResult);
+    currentId.value = [result.ele.id];
+    return result.ele.id;
+  };
+  const findPocoByPoint = (ele, x, y) => {
+    const result = [];
+    for (const i in ele) {
+      let eleStartX;
+      let eleStartY;
+      let eleEndX;
+      let eleEndY;
+      if (directionStatus.value === 0 || directionStatus.value === 180) {
+        eleStartX =
+          ele[i].payload.pos[0] * imgWidth -
+          (ele[i].payload.size[0] * imgWidth) / 2;
+        eleStartY =
+          ele[i].payload.pos[1] * imgHeight -
+          (ele[i].payload.size[1] * imgHeight) / 2;
+        eleEndX =
+          ele[i].payload.pos[0] * imgWidth +
+          (ele[i].payload.size[0] * imgWidth) / 2;
+        eleEndY =
+          ele[i].payload.pos[1] * imgHeight +
+          (ele[i].payload.size[1] * imgHeight) / 2;
+      } else {
+        eleStartX =
+          ele[i].payload.pos[0] * imgHeight -
+          (ele[i].payload.size[0] * imgHeight) / 2;
+        eleStartY =
+          ele[i].payload.pos[1] * imgWidth -
+          (ele[i].payload.size[1] * imgWidth) / 2;
+        eleEndX =
+          ele[i].payload.pos[0] * imgHeight +
+          (ele[i].payload.size[0] * imgHeight) / 2;
+        eleEndY =
+          ele[i].payload.pos[1] * imgWidth +
+          (ele[i].payload.size[1] * imgWidth) / 2;
+      }
+      if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
+        result.push({
+          ele: ele[i],
+          size: (eleEndX - eleStartX) * (eleEndY - eleStartY),
+        });
+      }
+      if (ele[i].children) {
+        const childrenResult = findPocoByPoint(ele[i].children, x, y);
+        if (childrenResult.length > 0) {
+          result.push.apply(result, childrenResult);
+        }
       }
     }
-  }
-  return result;
-};
-const handleNodeClick = (data) => {
-  if (data !== null) {
-    elementDetail.value = data.detail;
-    print(data);
-  }
-};
-const handlePocoClick = (data) => {
-  if (data !== null) {
-    pocoDetail.value = data.payload;
-    printPoco(data.payload);
-  }
-};
-const printPoco = (data) => {
-  const canvas = document.getElementById('debugPocoPic'),
-      g = canvas.getContext('2d');
-  g.clearRect(0, 0, canvas.width, canvas.height);
-  const eleStartX = data.pos[0] * imgWidth - (data.size[0] * imgWidth) / 2;
-  const eleStartY = data.pos[1] * imgHeight - (data.size[1] * imgHeight) / 2;
-  let a = Math.round(Math.random() * 255);
-  let b = Math.round(Math.random() * 255);
-  let c = Math.round(Math.random() * 255);
-  g.fillStyle = 'rgba(' + a + ', ' + b + ', ' + c + ', 0.6)';
-  g.fillRect(
+    return result;
+  };
+  const findElementByPoint = (ele, x, y) => {
+    const result = [];
+    for (const i in ele) {
+      const eleStartX = ele[i].detail.bStart.substring(
+        0,
+        ele[i].detail.bStart.indexOf(',')
+      );
+      const eleStartY = ele[i].detail.bStart.substring(
+        ele[i].detail.bStart.indexOf(',') + 1
+      );
+      const eleEndX = ele[i].detail.bEnd.substring(
+        0,
+        ele[i].detail.bEnd.indexOf(',')
+      );
+      const eleEndY = ele[i].detail.bEnd.substring(
+        ele[i].detail.bEnd.indexOf(',') + 1
+      );
+      if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
+        result.push({
+          ele: ele[i],
+          size: (eleEndY - eleStartY) * (eleEndX - eleStartX),
+        });
+      }
+      if (ele[i].children) {
+        const childrenResult = findElementByPoint(ele[i].children, x, y);
+        if (childrenResult.length > 0) {
+          result.push.apply(result, childrenResult);
+        }
+      }
+    }
+    return result;
+  };
+  const handleNodeClick = (data) => {
+    if (data !== null) {
+      elementDetail.value = data.detail;
+      print(data);
+    }
+  };
+  const handlePocoClick = (data) => {
+    if (data !== null) {
+      pocoDetail.value = data.payload;
+      printPoco(data.payload);
+    }
+  };
+  const printPoco = (data) => {
+    const canvas = document.getElementById('debugPocoPic');
+      const g = canvas.getContext('2d');
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    const eleStartX = data.pos[0] * imgWidth - (data.size[0] * imgWidth) / 2;
+    const eleStartY = data.pos[1] * imgHeight - (data.size[1] * imgHeight) / 2;
+    const a = Math.round(Math.random() * 255);
+    const b = Math.round(Math.random() * 255);
+    const c = Math.round(Math.random() * 255);
+    g.fillStyle = `rgba(${  a  }, ${  b  }, ${  c  }, 0.6)`;
+    g.fillRect(
       eleStartX * (canvas.width / imgWidth),
       eleStartY * (canvas.height / imgHeight),
       data.size[0] * imgWidth * (canvas.width / imgWidth),
-      data.size[1] * imgHeight * (canvas.height / imgHeight),
-  );
-};
-const print = (data) => {
-  const canvas = document.getElementById('debugPic'),
-      g = canvas.getContext('2d');
-  g.clearRect(0, 0, canvas.width, canvas.height);
-  const eleStartX = data.detail['bStart'].substring(
+      data.size[1] * imgHeight * (canvas.height / imgHeight)
+    );
+  };
+  const print = (data) => {
+    const canvas = document.getElementById('debugPic');
+      const g = canvas.getContext('2d');
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    const eleStartX = data.detail.bStart.substring(
       0,
-      data.detail['bStart'].indexOf(','),
-  );
-  const eleStartY = data.detail['bStart'].substring(
-      data.detail['bStart'].indexOf(',') + 1,
-  );
-  const eleEndX = data.detail['bEnd'].substring(
+      data.detail.bStart.indexOf(',')
+    );
+    const eleStartY = data.detail.bStart.substring(
+      data.detail.bStart.indexOf(',') + 1
+    );
+    const eleEndX = data.detail.bEnd.substring(
       0,
-      data.detail['bEnd'].indexOf(','),
-  );
-  const eleEndY = data.detail['bEnd'].substring(
-      data.detail['bEnd'].indexOf(',') + 1,
-  );
-  let a = Math.round(Math.random() * 255);
-  let b = Math.round(Math.random() * 255);
-  let c = Math.round(Math.random() * 255);
-  g.fillStyle = 'rgba(' + a + ', ' + b + ', ' + c + ', 0.6)';
-  if (directionStatus.value === 0 || directionStatus.value === 180) {
-    g.fillRect(
+      data.detail.bEnd.indexOf(',')
+    );
+    const eleEndY = data.detail.bEnd.substring(
+      data.detail.bEnd.indexOf(',') + 1
+    );
+    const a = Math.round(Math.random() * 255);
+    const b = Math.round(Math.random() * 255);
+    const c = Math.round(Math.random() * 255);
+    g.fillStyle = `rgba(${  a  }, ${  b  }, ${  c  }, 0.6)`;
+    if (directionStatus.value === 0 || directionStatus.value === 180) {
+      g.fillRect(
         eleStartX * (canvas.width / imgWidth),
         eleStartY * (canvas.height / imgHeight),
         (eleEndX - eleStartX) * (canvas.width / imgWidth),
-        (eleEndY - eleStartY) * (canvas.height / imgHeight),
-    );
-  } else {
-    g.fillRect(
+        (eleEndY - eleStartY) * (canvas.height / imgHeight)
+      );
+    } else {
+      g.fillRect(
         eleStartX * (canvas.width / imgHeight),
         eleStartY * (canvas.height / imgWidth),
         (eleEndX - eleStartX) * (canvas.width / imgHeight),
-        (eleEndY - eleStartY) * (canvas.height / imgWidth),
-    );
-  }
-};
-const searchDevice = () => {
-  websocket.send(
+        (eleEndY - eleStartY) * (canvas.height / imgWidth)
+      );
+    }
+  };
+  const searchDevice = () => {
+    websocket.send(
       JSON.stringify({
         type: 'find',
-      }),
-  );
-};
-const startProxy = () => {
-  websocket.send(
+      })
+    );
+  };
+  const startProxy = () => {
+    websocket.send(
       JSON.stringify({
         type: 'proxy',
-      }),
-  );
-};
-const installCert = () => {
-  websocket.send(
+      })
+    );
+  };
+  const installCert = () => {
+    websocket.send(
       JSON.stringify({
         type: 'installCert',
-      }),
-  );
-};
-const openApp = (pkg) => {
-  websocket.send(
+      })
+    );
+  };
+  const openApp = (pkg) => {
+    websocket.send(
       JSON.stringify({
         type: 'debug',
         detail: 'openApp',
         pkg,
-      }),
-  );
-};
-const refreshAppList = () => {
-  appList.value = [];
-  ElMessage.success({
-    message: '加载应用列表中，请稍后...',
-  });
-  terminalWebsocket.send(
+      })
+    );
+  };
+  const refreshAppList = () => {
+    appList.value = [];
+    ElMessage.success({
+      message: '加载应用列表中，请稍后...',
+    });
+    terminalWebsocket.send(
       JSON.stringify({
         type: 'appList',
-      }),
-  );
-};
-const clearProxy = () => {
-  ElMessage.success({
-    message: '已取消自动全局代理，请手动配置代理',
-  });
-  websocket.send(
+      })
+    );
+  };
+  const clearProxy = () => {
+    ElMessage.success({
+      message: '已取消自动全局代理，请手动配置代理',
+    });
+    websocket.send(
       JSON.stringify({
         type: 'clearProxy',
-      }),
-  );
-};
-const uninstallApp = (pkg) => {
-  ElMessage.success({
-    message: '开始卸载！请稍后...',
-  });
-  websocket.send(
+      })
+    );
+  };
+  const uninstallApp = (pkg) => {
+    ElMessage.success({
+      message: '开始卸载！请稍后...',
+    });
+    websocket.send(
       JSON.stringify({
         type: 'uninstallApp',
         detail: pkg,
-      }),
-  );
-};
-const getEleScreen = (xpath) => {
-  elementScreenLoading.value = true;
-  websocket.send(
+      })
+    );
+  };
+  const getEleScreen = (xpath) => {
+    elementScreenLoading.value = true;
+    websocket.send(
       JSON.stringify({
         type: 'debug',
         detail: 'eleScreen',
         xpath,
-      }),
-  );
-};
-const clearLog = () => {
-  stepLog.value = [];
-};
-const setStepLog = (data) => {
-  stepLog.value.push(data);
-};
-const runStep = () => {
-  debugLoading.value = true;
-  activeTab2.value = 'log';
-  websocket.send(
+      })
+    );
+  };
+  const clearLog = () => {
+    stepLog.value = [];
+  };
+  const setStepLog = (data) => {
+    stepLog.value.push(data);
+  };
+  const runStep = () => {
+    debugLoading.value = true;
+    activeTab2.value = 'log';
+    websocket.send(
       JSON.stringify({
         type: 'debug',
         detail: 'runStep',
-        caseId: testCase.value['id'],
-        pwd: device.value['password'],
-      }),
-  );
-};
-const stopStep = () => {
-  debugLoading.value = false;
-  websocket.send(
+        caseId: testCase.value.id,
+        pwd: device.value.password,
+      })
+    );
+  };
+  const stopStep = () => {
+    debugLoading.value = false;
+    websocket.send(
       JSON.stringify({
         type: 'debug',
         detail: 'stopStep',
-        udId: device.value['udId'],
-        caseId: testCase.value['id'],
-        pf: device.value['platform'],
-      }),
-  );
-};
-const pressKey = (keyNum) => {
-  websocket.send(
+        udId: device.value.udId,
+        caseId: testCase.value.id,
+        pf: device.value.platform,
+      })
+    );
+  };
+  const pressKey = (keyNum) => {
+    websocket.send(
       JSON.stringify({
         type: 'keyEvent',
         detail: keyNum,
-      }),
-  );
-};
-const batteryDisconnect = () => {
-  websocket.send(
+      })
+    );
+  };
+  const batteryDisconnect = () => {
+    websocket.send(
       JSON.stringify({
         type: 'battery',
         detail: 0,
-      }),
-  );
-};
-const batteryReset = () => {
-  websocket.send(
+      })
+    );
+  };
+  const batteryReset = () => {
+    websocket.send(
       JSON.stringify({
         type: 'battery',
         detail: 1,
-      }),
-  );
-};
-const changePic = (type) => {
-  loading.value = true;
-  let pic;
-  switch (type) {
-    case '低':
-      pic = 'low';
-      break;
-    case '中':
-      pic = 'middle';
-      break;
-    case '高':
-      pic = 'high';
-      break;
-    case 'fixed':
-      pic = 'fixed';
-      break;
-  }
-  screenWebsocket.send(
+      })
+    );
+  };
+  const changePic = (type) => {
+    loading.value = true;
+    let pic;
+    switch (type) {
+      case '低':
+        pic = 'low';
+        break;
+      case '中':
+        pic = 'middle';
+        break;
+      case '高':
+        pic = 'high';
+        break;
+      case 'fixed':
+        pic = 'fixed';
+        break;
+    }
+    screenWebsocket.send(
       JSON.stringify({
         type: 'pic',
         detail: pic,
-      }),
-  );
-};
-const changeScreenMode = (type, isInit) => {
-  if (isInit !== 1) {
-    loading.value = true;
-    __Scrcpy.switchMode(type);
-    screenMode.value = type;
-    oldBlob = undefined;
-  }
-  if (type === 'Minicap') {
-    touchWrapper = document.getElementById('canvas');
-  } else {
-    oldBlob = undefined // 清除记录
-    touchWrapper = document.getElementById('scrcpy-video');
-  }
-  // 储存最后模式
-  window.localStorage.setItem('screenMode', type);
-};
-const pullPath = ref("")
-const pullLoading = ref(false)
-const pullResult = ref("")
-const pullFile = () => {
-  pullResult.value = "";
-  pullLoading.value = true
-  websocket.send(
+      })
+    );
+  };
+  const changeScreenMode = (type, isInit) => {
+    if (isInit !== 1) {
+      loading.value = true;
+      __Scrcpy.switchMode(type);
+      screenMode.value = type;
+      oldBlob = undefined;
+    }
+    if (type === 'Minicap') {
+      touchWrapper = document.getElementById('canvas');
+    } else {
+      oldBlob = undefined; // 清除记录
+      touchWrapper = document.getElementById('scrcpy-video');
+    }
+    // 储存最后模式
+    window.localStorage.setItem('screenMode', type);
+  };
+  const pullPath = ref('');
+  const pullLoading = ref(false);
+  const pullResult = ref('');
+  const pullFile = () => {
+    pullResult.value = '';
+    pullLoading.value = true;
+    websocket.send(
       JSON.stringify({
         type: 'pullFile',
-        path: pullPath.value
-      }),
-  );
-}
-const fileLoading = ref(false);
-const upLoadFilePath = ref("");
-const pushPath = ref("")
-const pushLoading = ref(false)
-const pushFile = () => {
-  pushLoading.value = true
-  websocket.send(
+        path: pullPath.value,
+      })
+    );
+  };
+  const fileLoading = ref(false);
+  const upLoadFilePath = ref('');
+  const pushPath = ref('');
+  const pushLoading = ref(false);
+  const pushFile = () => {
+    pushLoading.value = true;
+    websocket.send(
       JSON.stringify({
         type: 'pushFile',
         file: upLoadFilePath.value,
-        path: pushPath.value
-      }),
-  );
-}
-const uploadFile = (content) => {
-  fileLoading.value = true;
-  let formData = new FormData();
-  formData.append('file', content.file);
-  formData.append('type', 'packageFiles');
-  axios
-      .post('/folder/upload', formData, {headers: {'Content-type': 'multipart/form-data'}})
+        path: pushPath.value,
+      })
+    );
+  };
+  const uploadFile = (content) => {
+    fileLoading.value = true;
+    const formData = new FormData();
+    formData.append('file', content.file);
+    formData.append('type', 'packageFiles');
+    axios
+      .post('/folder/upload', formData, {
+        headers: { 'Content-type': 'multipart/form-data' },
+      })
       .then((resp) => {
         fileLoading.value = false;
-        if (resp['code'] === 2000) {
-          upLoadFilePath.value = resp['data'];
+        if (resp.code === 2000) {
+          upLoadFilePath.value = resp.data;
         }
       });
-};
-const beforeAvatarUpload = (file) => {
+  };
+  const beforeAvatarUpload = (file) => {
   if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
     return true;
-  } else {
+  } 
     ElMessage.error({
       message: '文件格式有误！',
     });
     return false;
-  }
+  
 };
-let treeId = 1;
-const setPocoTreeId = (data) => {
-  for (let i in data) {
-    data[i].id = treeId;
-    treeId++;
-    if (data[i].children) {
-      setPocoTreeId(data[i].children, treeId)
+  let treeId = 1;
+  const setPocoTreeId = (data) => {
+    for (const i in data) {
+      data[i].id = treeId;
+      treeId++;
+      if (data[i].children) {
+        setPocoTreeId(data[i].children, treeId);
+      }
     }
-  }
-}
-const beforeAvatarUpload2 = (file) => {
+  };
+  const beforeAvatarUpload2 = (file) => {
   if (file.name.endsWith('.apk')) {
     return true;
-  } else {
+  } 
     ElMessage.error({
       message: '文件格式有误！',
     });
     return false;
-  }
+  
 };
-const limitOut = () => {
-  ElMessage.error({
-    message: '只能添加一个文件！请先移除旧文件',
-  });
-};
-const uploadPackage = (content) => {
-  uploadLoading.value = true;
-  let formData = new FormData();
-  formData.append('file', content.file);
-  formData.append('type', 'packageFiles');
-  axios
-      .post('/folder/upload', formData, {headers: {'Content-type': 'multipart/form-data'}})
+  const limitOut = () => {
+    ElMessage.error({
+      message: '只能添加一个文件！请先移除旧文件',
+    });
+  };
+  const uploadPackage = (content) => {
+    uploadLoading.value = true;
+    const formData = new FormData();
+    formData.append('file', content.file);
+    formData.append('type', 'packageFiles');
+    axios
+      .post('/folder/upload', formData, {
+        headers: { 'Content-type': 'multipart/form-data' },
+      })
       .then((resp) => {
         uploadLoading.value = false;
-        if (resp['code'] === 2000) {
-          install(resp['data']);
+        if (resp.code === 2000) {
+          install(resp.data);
         }
       });
-};
-const uploadScan = (content) => {
-  let formData = new FormData();
-  formData.append('file', content.file);
-  formData.append('type', 'imageFiles');
-  axios
-      .post('/folder/upload', formData, {headers: {'Content-type': 'multipart/form-data'}})
+  };
+  const uploadScan = (content) => {
+    const formData = new FormData();
+    formData.append('file', content.file);
+    formData.append('type', 'imageFiles');
+    axios
+      .post('/folder/upload', formData, {
+        headers: { 'Content-type': 'multipart/form-data' },
+      })
       .then((resp) => {
-        if (resp['code'] === 2000) {
+        if (resp.code === 2000) {
           ElMessage.success({
-            message: resp['message'],
+            message: resp.message,
           });
-          scan(resp['data']);
+          scan(resp.data);
         }
       });
-};
-const scan = (url) => {
-  websocket.send(
+  };
+  const scan = (url) => {
+    websocket.send(
       JSON.stringify({
         type: 'scan',
         url,
-      }),
-  );
-};
-const sendText = (text) => {
-  websocket.send(
+      })
+    );
+  };
+  const sendText = (text) => {
+    websocket.send(
       JSON.stringify({
         type: 'text',
         detail: text,
-      }),
-  );
-};
-const install = (apk) => {
-  if (apk.length > 0) {
-    websocket.send(
+      })
+    );
+  };
+  const install = (apk) => {
+    if (apk.length > 0) {
+      websocket.send(
         JSON.stringify({
           type: 'debug',
           detail: 'install',
           apk,
-        }),
-    );
-    ElMessage.success({
-      message: '开始安装！请稍后...',
-    });
-  }
-};
-const getElement = () => {
-  elementLoading.value = true;
-  setImgData();
-  websocket.send(
+        })
+      );
+      ElMessage.success({
+        message: '开始安装！请稍后...',
+      });
+    }
+  };
+  const getElement = () => {
+    elementLoading.value = true;
+    setImgData();
+    websocket.send(
       JSON.stringify({
         type: 'debug',
         detail: 'tree',
-      }),
-  );
-};
-const getPoco = (type) => {
-  pocoLoading.value = true;
-  setPocoImgData();
-  websocket.send(
+      })
+    );
+  };
+  const getPoco = (type) => {
+    pocoLoading.value = true;
+    setPocoImgData();
+    websocket.send(
       JSON.stringify({
         type: 'poco',
         detail: type,
-      }),
-  );
-}
-const getWebViewForward = () => {
-  webViewLoading.value = true;
-  websocket.send(
+      })
+    );
+  };
+  const getWebViewForward = () => {
+    webViewLoading.value = true;
+    websocket.send(
       JSON.stringify({
         type: 'forwardView',
-      }),
-  );
-};
-const close = () => {
-  if (websocket !== null) {
-    websocket.close();
-    websocket = null;
-  }
-  if (screenWebsocket !== null) {
-    screenWebsocket.close();
-    screenWebsocket = null;
-    __Scrcpy && __Scrcpy.destroy();
-    __Scrcpy = null;
-  }
-  if (terminalWebsocket !== null) {
-    terminalWebsocket.close();
-    terminalWebsocket = null;
-  }
-  if (audioPlayer !== null) {
-    destroyAudio();
-  }
-};
-onBeforeUnmount(() => {
-  close();
-});
-const getDeviceById = (id) => {
-  loading.value = true;
-  axios
-      .get('/controller/devices', {params: {id: id}}).then((resp) => {
-    if (resp['code'] === 2000) {
-      device.value = resp.data;
-      if (device.value['status'] !== 'ONLINE') {
-        ElMessage.error({
-          message: '该设备暂时不可使用！',
-        });
-        router.replace('/Index/Devices');
-        return;
-      }
-      axios
-          .get('/controller/agents', {params: {id: device.value['agentId']}}).then((resp) => {
-        if (resp['code'] === 2000) {
-          agent.value = resp.data;
-          openSocket(agent.value['host'], agent.value['port']
-              , agent.value['secretKey'], device.value['udId']);
-        }
-      });
+      })
+    );
+  };
+  const close = () => {
+    if (websocket !== null) {
+      websocket.close();
+      websocket = null;
     }
+    if (screenWebsocket !== null) {
+      screenWebsocket.close();
+      screenWebsocket = null;
+      __Scrcpy && __Scrcpy.destroy();
+      __Scrcpy = null;
+    }
+    if (terminalWebsocket !== null) {
+      terminalWebsocket.close();
+      terminalWebsocket = null;
+    }
+    if (audioPlayer !== null) {
+      destroyAudio();
+    }
+  };
+  onBeforeUnmount(() => {
+    close();
   });
-};
-/**
- * 实时音频
- */
-let audioPlayer = null;
-let isConnectAudio = ref(false);
-const initAudioPlayer = () => {
-  audioPlayer = new AudioProcessor({
-    node: 'audio-player',
-    wsUrl: 'ws://' + agent.value['host'] + ':' + agent.value['port'] + '/websockets/audio/' + agent.value['secretKey'] + '/' + device.value['udId'],
-    onReady() {
-      isConnectAudio.value = true;
-    },
-  });
-  audioPlayer.ws.onError(function () {
-    destroyAudio();
-  });
-};
-const playAudio = () => {
-  if (audioPlayer) {
-    ElMessage.warning({
-      message: '远程音频已开启，请勿重复操作！',
+  const getDeviceById = (id) => {
+    loading.value = true;
+    axios.get('/controller/devices', { params: { id } }).then((resp) => {
+      if (resp.code === 2000) {
+        device.value = resp.data;
+        if (device.value.status !== 'ONLINE') {
+          ElMessage.error({
+            message: '该设备暂时不可使用！',
+          });
+          router.replace('/Index/Devices');
+          return;
+        }
+        axios
+          .get('/controller/agents', {
+            params: { id: device.value.agentId },
+          })
+          .then((resp) => {
+            if (resp.code === 2000) {
+              agent.value = resp.data;
+              openSocket(
+                agent.value.host,
+                agent.value.port,
+                agent.value.secretKey,
+                device.value.udId
+              );
+            }
+          });
+      }
     });
-    return;
-  }
-  initAudioPlayer();
-  audioPlayer.onPlay();
-  ElMessage.success({
-    message: '远程音频传输已连接！',
+  };
+  /**
+   * 实时音频
+   */
+  let audioPlayer = null;
+  const isConnectAudio = ref(false);
+  const initAudioPlayer = () => {
+    audioPlayer = new AudioProcessor({
+      node: 'audio-player',
+      wsUrl:
+        `ws://${ 
+        agent.value.host 
+        }:${ 
+        agent.value.port 
+        }/websockets/audio/${ 
+        agent.value.secretKey 
+        }/${ 
+        device.value.udId}`,
+      onReady() {
+        isConnectAudio.value = true;
+      },
+    });
+    audioPlayer.ws.onError(function () {
+      destroyAudio();
+    });
+  };
+  const playAudio = () => {
+    if (audioPlayer) {
+      ElMessage.warning({
+        message: '远程音频已开启，请勿重复操作！',
+      });
+      return;
+    }
+    initAudioPlayer();
+    audioPlayer.onPlay();
+    ElMessage.success({
+      message: '远程音频传输已连接！',
+    });
+  };
+  const destroyAudio = () => {
+    audioPlayer.onDestroy();
+    audioPlayer = null;
+    isConnectAudio.value = false;
+    ElMessage.info({
+      message: '远程音频传输已断开！',
+    });
+  };
+  const resetAudioPlayer = () => {
+    audioPlayer.jmuxer.reset();
+    audioPlayer.onPlay();
+    ElMessage.success({
+      message: '远程音频同步成功！',
+    });
+  };
+  onBeforeMount(() => {
+    isAudoInit.value = localStorage.getItem('SonicAndroidIsAutoInit')
+      ? localStorage.getItem('SonicAndroidIsAutoInit')
+      : '0';
   });
-};
-const destroyAudio = () => {
-  audioPlayer.onDestroy();
-  audioPlayer = null;
-  isConnectAudio.value = false;
-  ElMessage.info({
-    message: '远程音频传输已断开！',
+  onMounted(() => {
+    if (store.state.project.id) {
+      project.value = store.state.project;
+    }
+    getDeviceById(route.params.deviceId);
+    store.commit('autoChangeCollapse');
   });
-};
-const resetAudioPlayer = () => {
-  audioPlayer.jmuxer.reset();
-  audioPlayer.onPlay();
-  ElMessage.success({
-    message: '远程音频同步成功！',
-  });
-};
-onBeforeMount(() => {
-  isAudoInit.value = localStorage.getItem('SonicAndroidIsAutoInit') ? localStorage.getItem('SonicAndroidIsAutoInit') : '0'
-})
-onMounted(() => {
-  if (store.state.project.id) {
-    project.value = store.state.project;
-  }
-  getDeviceById(route.params.deviceId);
-  store.commit('autoChangeCollapse');
-});
 </script>
 
 <template>
-  <el-dialog
-      title="控件元素快照"
-      v-model="dialogImgElement"
-      width="28%"
-  >
+  <el-dialog v-model="dialogImgElement" title="控件元素快照" width="28%">
     <el-card>
       <el-image
-          z-index="5000"
-          fit="contain"
-          style="width: 100%; height: 100px"
-          :src="imgElementUrl"
-          :preview-src-list="[imgElementUrl]"
+        z-index="5000"
+        fit="contain"
+        style="width: 100%; height: 100px"
+        :src="imgElementUrl"
+        :preview-src-list="[imgElementUrl]"
       ></el-image>
     </el-card>
     <el-form
-        ref="updateImgEle"
-        :model="element"
-        size="small"
-        style="margin-top: 20px"
+      ref="updateImgEle"
+      :model="element"
+      size="small"
+      style="margin-top: 20px"
     >
       <el-form-item
-          prop="eleName"
-          label="控件元素名称"
-          :rules="{
-            required: true,
-            message: '控件元素名称不能为空',
-            trigger: 'blur',
-          }"
+        prop="eleName"
+        label="控件元素名称"
+        :rules="{
+          required: true,
+          message: '控件元素名称不能为空',
+          trigger: 'blur',
+        }"
       >
         <el-input
-            v-model="element.eleName"
-            placeholder="请输入控件元素名称"
+          v-model="element.eleName"
+          placeholder="请输入控件元素名称"
         ></el-input>
       </el-form-item>
       <div style="text-align: center">
         <el-button size="small" type="primary" @click="saveEle"
-        >保存为图片元素
-        </el-button
-        >
+          >保存为图片元素
+        </el-button>
       </div>
     </el-form>
   </el-dialog>
   <el-dialog v-model="dialogElement" title="控件元素信息" width="600px">
-    <element-update v-if="dialogElement" :project-id="project['id']"
-                    :element-id="0" :element-obj="element" @flush="dialogElement = false"/>
+    <element-update
+v-if="dialogElement" :project-id="project['id']"
+      :element-id="0"
+      :element-obj="element"
+      @flush="dialogElement = false"
+    />
   </el-dialog>
   <el-page-header
-      @back="router.go(-1)"
-      content="远程控制"
-      style="margin-bottom: 20px"
+    content="远程控制"
+    style="margin-bottom: 20px"
+    @back="router.go(-1)"
   >
   </el-page-header>
   <el-card shadow="never">
     <el-row
-        :gutter="24"
-        @mouseup="lineMouseup"
-        @mouseleave="lineMouseleave"
-        @mousemove="lineMousemove"
+      :gutter="24"
+      @mouseup="lineMouseup"
+      @mouseleave="lineMouseleave"
+      @mousemove="lineMousemove"
     >
       <el-col
-          :span="tabPosition == 'left' ? 12 : 24"
-          :style="{
-            flexBasis: tabPosition == 'left' ? layoutSplitInfo.left + '%' : '',
-             maxWidth: tabPosition == 'left' ? layoutSplitInfo.left + '%' : '',
-             transition: !isSplitPressing ? 'flex-basis 0.3s,max-width 0.3s' : ''
-          }"
+        :span="tabPosition == 'left' ? 12 : 24"
+        :style="{
+          flexBasis: tabPosition == 'left' ? layoutSplitInfo.left + '%' : '',
+          maxWidth: tabPosition == 'left' ? layoutSplitInfo.left + '%' : '',
+          transition: !isSplitPressing ? 'flex-basis 0.3s,max-width 0.3s' : '',
+        }"
       >
-        <el-card v-loading="loading"
-                 element-loading-text="准备图像中..."
-                 element-loading-background="rgba(255, 255, 255, 1)"
-                 style="font-size: 14px"
-                 :body-style="{ padding: '10px', background: '#ccc', position: 'relative',minHeight: '340px' }"
+        <el-card
+          v-loading="loading"
+          element-loading-text="准备图像中..."
+          element-loading-background="rgba(255, 255, 255, 1)"
+          style="font-size: 14px"
+          :body-style="{
+            padding: '10px',
+            background: '#ccc',
+            position: 'relative',
+            minHeight: '340px',
+          }"
         >
           <template #header>
-            <div style="position: relative; display: flex;align-items: center;">
-              <el-icon :size="14" style="vertical-align: middle;">
-                <Cellphone/>
+            <div style="position: relative; display: flex; align-items: center">
+              <el-icon :size="14" style="vertical-align: middle">
+                <Cellphone />
               </el-icon>
-              <RenderDeviceName style="color: #e6a23c; margin-left: 5px" :device="device"/>
+              <RenderDeviceName
+                style="color: #e6a23c; margin-left: 5px"
+                :device="device"
+              />
               <el-popover placement="bottom-end" width="270" trigger="hover">
                 <el-form
-                    label-position="left"
-                    class="demo-table-expand"
-                    label-width="90px"
-                    style="margin-left: 10px; word-break: break-all"
+                  label-position="left"
+                  class="demo-table-expand"
+                  label-width="90px"
+                  style="margin-left: 10px; word-break: break-all"
                 >
                   <el-form-item label="设备名称">
                     <span>{{ device.name }}</span>
@@ -1788,9 +1895,16 @@ onMounted(() => {
                   </el-form-item>
                   <el-form-item label="设备系统">
                     <img
-                        height="25"
-                        style="position: absolute; top: 7px; bottom: 7px; left: 7px"
-                        :src="getImg(device['isHm']===1?'HarmonyOs':'ANDROID')"
+                      height="25"
+                      style="
+                        position: absolute;
+                        top: 7px;
+                        bottom: 7px;
+                        left: 7px;
+                      "
+                      :src="
+                        getImg(device['isHm'] === 1 ? 'HarmonyOs' : 'ANDROID')
+                      "
                     />
                   </el-form-item>
                   <el-form-item label="系统版本">
@@ -1804,16 +1918,21 @@ onMounted(() => {
                   </el-form-item>
                   <el-form-item label="设备制造商">
                     <img
-                        height="25"
-                        style="position: absolute; top: 7px; bottom: 7px; left: 7px"
-                        :src="getImg(device['manufacturer'])"
+                      height="25"
+                      style="
+                        position: absolute;
+                        top: 7px;
+                        bottom: 7px;
+                        left: 7px;
+                      "
+                      :src="getImg(device['manufacturer'])"
                     />
                   </el-form-item>
                 </el-form>
                 <template #reference>
-                  <div style="position: absolute;right:0px;color: #909399;">
-                    <el-icon :size="15" style="vertical-align: middle;">
-                      <InfoFilled/>
+                  <div style="position: absolute; right: 0px; color: #909399">
+                    <el-icon :size="15" style="vertical-align: middle">
+                      <InfoFilled />
                     </el-icon>
                   </div>
                 </template>
@@ -1822,102 +1941,98 @@ onMounted(() => {
           </template>
           <div style="margin-right: 40px; text-align: center">
             <video
-                id="scrcpy-video"
-                @mouseup="mouseup"
-                @mousemove="mousemove"
-                @mousedown="mousedown"
-                @mouseleave="mouseleave"
-                style="display: inline-block; min-height: 100%"
-                :style="canvasRectInfo"
-                autoplay
-                muted
-                v-show="screenMode == 'Scrcpy'"
+              id="scrcpy-video"
+              style="display: inline-block; min-height: 100%"
+              :style="canvasRectInfo"
+              autoplay
+              v-show="screenMode == 'Scrcpy'"
+              muted
+              @mouseup="mouseup"
+              @mousemove="mousemove"
+              @mousedown="mousedown"
+              @mouseleave="mouseleave"
             />
             <canvas
-                id="canvas"
-                @mouseup="mouseup"
+              v-show="screenMode != 'Scrcpy'"
+              id="canvas"
+              style="display: inline-block"
+              :style="canvasRectInfo"
+              @mouseup="mouseup"
                 @mousemove="mousemove"
-                @mousedown="mousedown"
-                @mouseleave="mouseleave"
-                style="display: inline-block"
-                :style="canvasRectInfo"
-                v-show="screenMode != 'Scrcpy'"
+              @mousedown="mousedown"
+              @mouseleave="mouseleave"
             />
             <audio id="audio-player" hidden></audio>
             <el-button-group id="pressKey">
               <el-button
-                  size="small"
-                  style="width: 25%"
-                  type="info"
-                  @click="pressKey(82)"
+                size="small"
+                style="width: 25%"
+                type="info"
+                @click="pressKey(82)"
               >
-                <el-icon :size="13" style="vertical-align: middle;">
-                  <Menu/>
+                <el-icon :size="13" style="vertical-align: middle">
+                  <Menu />
                 </el-icon>
               </el-button>
               <el-button
-                  size="small"
-                  style="width: 25%"
-                  type="info"
-                  @click="pressKey(187)"
+                size="small"
+                style="width: 25%"
+                type="info"
+                @click="pressKey(187)"
               >
-                <el-icon :size="13" style="vertical-align: middle;">
-                  <CopyDocument/>
+                <el-icon :size="13" style="vertical-align: middle">
+                  <CopyDocument />
                 </el-icon>
               </el-button>
               <el-button
-                  size="small"
-                  style="width: 25%"
-                  type="info"
-                  @click="pressKey(3)"
+                size="small"
+                style="width: 25%"
+                type="info"
+                @click="pressKey(3)"
               >
-                <el-icon :size="13" style="vertical-align: middle;">
-                  <House/>
+                <el-icon :size="13" style="vertical-align: middle">
+                  <House />
                 </el-icon>
               </el-button>
               <el-button
-                  size="small"
-                  style="width: 25%"
-                  type="info"
-                  @click="pressKey(4)"
+                size="small"
+                style="width: 25%"
+                type="info"
+                @click="pressKey(4)"
               >
-                <el-icon :size="13" style="vertical-align: middle;">
-                  <Back/>
+                <el-icon :size="13" style="vertical-align: middle">
+                  <Back />
                 </el-icon>
               </el-button>
             </el-button-group>
           </div>
           <div style="position: absolute; right: 5px; top: 10px">
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="投屏模式"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="投屏模式"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="info"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <VideoCamera/>
+                  <el-button size="small" type="info" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <VideoCamera />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu class="divider">
                       <el-radio-group
-                          v-loading="loading"
-                          v-model="screenMode"
-                          size="mini"
-                          @change="changeScreenMode"
+                        v-model="screenMode"
+                        v-loading="loading"
+                        size="mini"
+                        @change="changeScreenMode"
                       >
                         <el-radio-button label="Scrcpy"></el-radio-button>
                         <el-radio-button label="Minicap"></el-radio-button>
@@ -1928,35 +2043,31 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="投屏帧数"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="投屏帧数"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="info"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <View/>
+                  <el-button size="small" type="info" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <View />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu class="divider">
                       <el-radio-group
+                        v-model="pic"
                           v-loading="loading"
-                          v-model="pic"
-                          size="mini"
-                          @change="changePic"
+                        size="mini"
+                        @change="changePic"
                       >
                         <el-radio-button label="低"></el-radio-button>
                         <el-radio-button label="中"></el-radio-button>
@@ -1968,78 +2079,76 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="手动修复"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="手动修复"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="info"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <Place/>
+                  <el-button size="small" type="info" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <Place />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
-                    <el-dropdown-menu class="divider" v-loading="loading"
-                                      element-loading-background="rgba(255, 255, 255, 1)">
+                    <el-dropdown-menu
+v-loading="loading" class="divider"
+                      element-loading-background="rgba(255, 255, 255, 1)"
+                    >
                       <el-button-group>
                         <el-tooltip
-                            effect="dark"
-                            content="修复黑屏"
-                            placement="top"
+                          effect="dark"
+                          content="修复黑屏"
+                          placement="top"
                         >
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              :disabled="screenMode !== 'Minicap'"
-                              @click="changePic('fixed')"
+                            size="small"
+                            type="info"
+                            circle
+                            :disabled="screenMode !== 'Minicap'"
+                            @click="changePic('fixed')"
                           >
-                            <el-icon :size="14" style="vertical-align: middle;">
-                              <Cellphone/>
+                            <el-icon :size="14" style="vertical-align: middle">
+                              <Cellphone />
                             </el-icon>
                           </el-button>
                         </el-tooltip>
                         <el-tooltip
-                            effect="dark"
-                            content="修复触控"
-                            placement="top"
+                          effect="dark"
+                          content="修复触控"
+                          placement="top"
                         >
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="fixTouch"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="fixTouch"
                           >
-                            <el-icon :size="14" style="vertical-align: middle;">
-                              <Pointer/>
+                            <el-icon :size="14" style="vertical-align: middle">
+                              <Pointer />
                             </el-icon>
                           </el-button>
                         </el-tooltip>
                         <el-tooltip
-                            effect="dark"
-                            content="修复横竖屏"
-                            placement="top"
+                          effect="dark"
+                          content="修复横竖屏"
+                          placement="top"
                         >
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="fixOri"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="fixOri"
                           >
-                            <el-icon :size="14" style="vertical-align: middle;">
-                              <Postcard/>
+                            <el-icon :size="14" style="vertical-align: middle">
+                              <Postcard />
                             </el-icon>
                           </el-button>
                         </el-tooltip>
@@ -2050,51 +2159,47 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="远程音频传输"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="远程音频传输"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="info"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <Service/>
+                  <el-button size="small" type="info" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <Service />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu class="divider">
                       <el-button-group>
                         <el-button
-                            size="small"
-                            type="success"
-                            circle
-                            @click="playAudio"
-                            :disabled="isConnectAudio"
+                          size="small"
+                          type="success"
+                          circle
+                          :disabled="isConnectAudio"
+                          @click="playAudio"
                         >
-                          <el-icon :size="14" style="vertical-align: middle;">
-                            <Bell/>
+                          <el-icon :size="14" style="vertical-align: middle">
+                            <Bell />
                           </el-icon>
                         </el-button>
                         <el-button
-                            size="small"
-                            type="danger"
-                            circle
-                            @click="destroyAudio"
-                            :disabled="!isConnectAudio"
+                          size="small"
+                          type="danger"
+                          circle
+                          :disabled="!isConnectAudio"
+                          @click="destroyAudio"
                         >
-                          <el-icon :size="14" style="vertical-align: middle;">
-                            <MuteNotification/>
+                          <el-icon :size="14" style="vertical-align: middle">
+                            <MuteNotification />
                           </el-icon>
                         </el-button>
                         <!-- <el-button
@@ -2113,60 +2218,56 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="电池模拟"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="电池模拟"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="info"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <Connection/>
+                  <el-button size="small" type="info" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <Connection />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu class="divider">
                       <el-button-group>
                         <el-tooltip
-                            effect="dark"
-                            content="模拟断电"
-                            placement="top"
+                          effect="dark"
+                          content="模拟断电"
+                          placement="top"
                         >
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="batteryDisconnect"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="batteryDisconnect"
                           >
-                            <el-icon :size="14" style="vertical-align: middle;">
-                              <VideoPause/>
+                            <el-icon :size="14" style="vertical-align: middle">
+                              <VideoPause />
                             </el-icon>
                           </el-button>
                         </el-tooltip>
                         <el-tooltip
-                            effect="dark"
-                            content="重置"
-                            placement="top"
+                          effect="dark"
+                          content="重置"
+                          placement="top"
                         >
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="batteryReset"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="batteryReset"
                           >
-                            <el-icon :size="14" style="vertical-align: middle;">
-                              <Refresh/>
+                            <el-icon :size="14" style="vertical-align: middle">
+                              <Refresh />
                             </el-icon>
                           </el-button>
                         </el-tooltip>
@@ -2177,110 +2278,112 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                effect="dark"
-                content="物理查找"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
+              effect="dark"
+              content="物理查找"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
             >
               <div style="margin-top: 4px">
                 <el-button
-                    size="small"
-                    type="info"
-                    circle
-                    @click="searchDevice"
+                  size="small"
+                  type="info"
+                  circle
+                  @click="searchDevice"
                 >
-                  <el-icon :size="12" style="vertical-align: middle;">
-                    <Search/>
+                  <el-icon :size="12" style="vertical-align: middle">
+                    <Search />
                   </el-icon>
                 </el-button>
               </div>
             </el-tooltip>
             <el-tooltip
-                :enterable="false"
-                effect="dark"
-                content="亮度/音量"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
-                :offset="15"
+              :enterable="false"
+              effect="dark"
+              content="亮度/音量"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
+              :offset="15"
             >
               <div>
                 <el-dropdown
-                    :hide-on-click="false"
-                    trigger="click"
-                    placement="right"
-                    style="margin-top: 4px"
+                  :hide-on-click="false"
+                  trigger="click"
+                  placement="right"
+                  style="margin-top: 4px"
                 >
-                  <el-button
-                      size="small"
-                      type="primary"
-                      circle
-                  >
-                    <el-icon :size="12" style="vertical-align: middle;">
-                      <Operation/>
+                  <el-button size="small" type="primary" circle>
+                    <el-icon :size="12" style="vertical-align: middle">
+                      <Operation />
                     </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu class="divider">
                       <div style="text-align: center">
-                        <el-icon :size="14" style="color: #909399;vertical-align: middle;">
-                          <Sunny/>
+                        <el-icon
+                          :size="14"
+                          style="color: #909399; vertical-align: middle"
+                        >
+                          <Sunny />
                         </el-icon>
                         <el-divider direction="vertical"></el-divider>
                         <el-button-group>
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="pressKey(220)"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="pressKey(220)"
                           >
-                            <el-icon :size="12" style="vertical-align: middle;">
-                              <CaretLeft/>
+                            <el-icon :size="12" style="vertical-align: middle">
+                              <CaretLeft />
                             </el-icon>
                           </el-button>
                           <el-button
-                              size="small"
-                              type="info"
-                              circle
-                              @click="pressKey(221)"
+                            size="small"
+                            type="info"
+                            circle
+                            @click="pressKey(221)"
                           >
-                            <el-icon :size="12" style="vertical-align: middle;">
-                              <CaretRight/>
+                            <el-icon :size="12" style="vertical-align: middle">
+                              <CaretRight />
                             </el-icon>
                           </el-button>
                         </el-button-group>
                       </div>
                       <el-divider></el-divider>
-                      <el-icon :size="14" style="color: #909399;vertical-align: middle;">
-                        <Phone/>
+                      <el-icon
+                        :size="14"
+                        style="color: #909399; vertical-align: middle"
+                      >
+                        <Phone />
                       </el-icon>
                       <el-divider direction="vertical"></el-divider>
                       <el-button-group>
                         <el-button
-                            size="small"
-                            type="info"
-                            circle
-                            @click="pressKey(24)"
+                          size="small"
+                          type="info"
+                          circle
+                          @click="pressKey(24)"
                         >
-                          <el-icon :size="12" style="vertical-align: middle;">
-                            <Plus/>
+                          <el-icon :size="12" style="vertical-align: middle">
+                            <Plus />
                           </el-icon>
                         </el-button>
                         <el-button
-                            size="small"
-                            type="info"
-                            circle
-                            @click="pressKey(164)"
+                          size="small"
+                          type="info"
+                          circle
+                          @click="pressKey(164)"
                         >
-                          <el-icon :size="12" style="vertical-align: middle;">
-                            <MuteNotification/>
+                          <el-icon :size="12" style="vertical-align: middle">
+                            <MuteNotification />
                           </el-icon>
                         </el-button>
                         <el-button
-                            size="small"
-                            type="info"
-                            circle
-                            @click="pressKey(25)"
+                          size="small"
+                          type="info"
+                          circle
+                          @click="pressKey(25)"
                         >
-                          <el-icon :size="12" style="vertical-align: middle;">
-                            <Minus/>
+                          <el-icon :size="12" style="vertical-align: middle">
+                            <Minus />
                           </el-icon>
                         </el-button>
                       </el-button-group>
@@ -2290,73 +2393,73 @@ onMounted(() => {
               </div>
             </el-tooltip>
             <el-tooltip
-                effect="dark"
-                content="拨号"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
+              effect="dark"
+              content="拨号"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
             >
               <div style="margin-top: 4px">
                 <el-button
-                    size="small"
-                    type="primary"
-                    circle
-                    @click="pressKey(5)"
+                  size="small"
+                  type="primary"
+                  circle
+                  @click="pressKey(5)"
                 >
-                  <el-icon :size="12" style="vertical-align: middle;">
-                    <PhoneFilled/>
+                  <el-icon :size="12" style="vertical-align: middle">
+                    <PhoneFilled />
                   </el-icon>
                 </el-button>
               </div>
             </el-tooltip>
             <el-tooltip
-                effect="dark"
-                content="拍照"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
+              effect="dark"
+              content="拍照"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
             >
               <div style="margin-top: 4px">
                 <el-button
-                    size="small"
-                    type="primary"
-                    circle
-                    @click="pressKey(27)"
+                  size="small"
+                  type="primary"
+                  circle
+                  @click="pressKey(27)"
                 >
-                  <el-icon :size="12" style="vertical-align: middle;">
-                    <Camera/>
+                  <el-icon :size="12" style="vertical-align: middle">
+                    <Camera />
                   </el-icon>
                 </el-button>
               </div>
             </el-tooltip>
             <el-tooltip
-                effect="dark"
-                content="浏览器"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
+              effect="dark"
+              content="浏览器"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
             >
               <div style="margin-top: 4px">
                 <el-button
-                    size="small"
-                    type="primary"
-                    circle
-                    @click="pressKey(64)"
+                  size="small"
+                  type="primary"
+                  circle
+                  @click="pressKey(64)"
                 >
-                  <el-icon :size="12" style="vertical-align: middle;">
-                    <Position/>
+                  <el-icon :size="12" style="vertical-align: middle">
+                    <Position />
                   </el-icon>
                 </el-button>
               </div>
             </el-tooltip>
             <el-tooltip
-                effect="dark"
-                content="锁定/解锁屏幕"
-                :placement="tabPosition == 'left' ? 'right' : 'left'"
+              effect="dark"
+              content="锁定/解锁屏幕"
+              :placement="tabPosition == 'left' ? 'right' : 'left'"
             >
               <div style="margin-top: 4px">
                 <el-button
-                    size="small"
-                    type="primary"
-                    circle
-                    @click="pressKey(26)"
+                  size="small"
+                  type="primary"
+                  circle
+                  @click="pressKey(26)"
                 >
-                  <el-icon :size="12" style="vertical-align: middle;">
-                    <SwitchButton/>
+                  <el-icon :size="12" style="vertical-align: middle">
+                    <SwitchButton />
                   </el-icon>
                 </el-button>
               </div>
@@ -2366,23 +2469,32 @@ onMounted(() => {
       </el-col>
 
       <div
-          :class="{ line: tabPosition == 'left', lineVertical: tabPosition == 'top' }"
-          @mousedown="lineMousedown"
+        :class="{
+          line: tabPosition == 'left',
+          lineVertical: tabPosition == 'top',
+        }"
+        @mousedown="lineMousedown"
       />
 
       <el-col
-          :span="tabPosition == 'left' ? 12 : 24"
-          :style="{
-            flexBasis: tabPosition == 'left' ?  100 - Number(layoutSplitInfo.left) + '%' : '',
-             maxWidth: tabPosition == 'left' ?  100 - Number(layoutSplitInfo.left) + '%' : ''
-          }"
+        :span="tabPosition == 'left' ? 12 : 24"
+        :style="{
+          flexBasis:
+            tabPosition == 'left'
+              ? 100 - Number(layoutSplitInfo.left) + '%'
+              : '',
+          maxWidth:
+            tabPosition == 'left'
+              ? 100 - Number(layoutSplitInfo.left) + '%'
+              : '',
+        }"
       >
         <el-tabs
-            @tab-click="switchTabs"
-            stretch
-            class="remote-tab"
-            v-model="activeTab"
-            :tab-position="tabPosition"
+          v-model="activeTab"
+          stretch
+          class="remote-tab"
+          :tab-position="tabPosition"
+          @tab-click="switchTabs"
         >
           <el-tab-pane label="远控面板" name="main">
             <el-row :gutter="20">
@@ -2392,22 +2504,21 @@ onMounted(() => {
                     <strong>输入文本</strong>
                   </template>
                   <el-form size="small" :model="text">
-                    <el-form-item
-                    >
+                    <el-form-item>
                       <el-input
-                          clearable
-                          v-model="text.content"
-                          size="small"
-                          placeholder="请输入要发送的文本，支持简体中文"
+                        v-model="text.content"
+                        clearable
+                        size="small"
+                        placeholder="请输入要发送的文本，支持简体中文"
                       ></el-input>
                     </el-form-item>
                   </el-form>
-                  <div style="text-align: center;">
+                  <div style="text-align: center">
                     <el-button
-                        size="mini"
-                        type="primary"
-                        @click="sendText(text.content)"
-                    >发送
+                      size="mini"
+                      type="primary"
+                      @click="sendText(text.content)"
+                      >发送
                     </el-button>
                   </div>
                 </el-card>
@@ -2415,34 +2526,64 @@ onMounted(() => {
               <el-col :span="8">
                 <el-tabs type="border-card" stretch>
                   <el-tab-pane label="远程ADB">
-                    <div v-if="remoteAdbUrl.length>0" style="margin-top: 20px;margin-bottom: 20px">
-                      <el-card :body-style="{backgroundColor:'#303133',cursor:'pointer'}"
-                               @click="copy('adb connect '+remoteAdbUrl)">
-                        <strong style="color: #F2F6FC">adb connect {{ remoteAdbUrl }}</strong>
+                    <div
+                      v-if="remoteAdbUrl.length > 0"
+                      style="margin-top: 20px; margin-bottom: 20px"
+                    >
+                      <el-card
+:body-style="{backgroundColor:'#303133',cursor:'pointer'}"
+                        }"
+                        @click="copy('adb connect ' + remoteAdbUrl)"
+                      >
+                        <strong style="color: #f2f6fc"
+                          >adb connect {{ remoteAdbUrl }}</strong
+                        >
                       </el-card>
                     </div>
-                    <div v-else v-loading="remoteAdbUrl.length===0"
-                         element-loading-spinner="el-icon-lock"
-                         element-loading-background="rgba(255, 255, 255, 1)"
-                         element-loading-text="所在Agent未开启该功能！"
-                         style="margin-top: 18px;margin-bottom: 18px">
+                    <div
+v-else v-loading="remoteAdbUrl.length===0"
+                      element-loading-spinner="el-icon-lock"
+                      element-loading-background="rgba(255, 255, 255, 1)"
+                      element-loading-text="所在Agent未开启该功能！"
+                      style="margin-top: 18px; margin-bottom: 18px"
+                    >
                       <el-card>
                         <strong>所在Agent未开启该功能！</strong>
                       </el-card>
                     </div>
                   </el-tab-pane>
                   <el-tab-pane label="远程Appium">
-                    <div v-if="remoteAppiumPort!==0" style="margin-top: 20px;margin-bottom: 20px">
-                      <el-card :body-style="{backgroundColor:'#303133',cursor:'pointer'}"
-                               @click="copy('http://'+agent['host']+':'+remoteAppiumPort+'/wd/hub')">
-                        <strong style="color: #F2F6FC">http://{{ agent['host'] }}:{{ remoteAppiumPort }}/wd/hub</strong>
+                    <div
+                      v-if="remoteAppiumPort !== 0"
+                      style="margin-top: 20px; margin-bottom: 20px"
+                    >
+                      <el-card
+:body-style="{backgroundColor:'#303133',cursor:'pointer'}"
+                        }"
+                        @click="
+                          copy(
+                            'http://' +
+                              agent['host'] +
+                              ':' +
+                              remoteAppiumPort +
+                              '/wd/hub'
+                          )
+                        "
+                      >
+                        <strong style="color: #f2f6fc"
+                          >http://{{ agent['host'] }}:{{
+                            remoteAppiumPort
+                          }}/wd/hub</strong
+                        >
                       </el-card>
                     </div>
-                    <div v-else v-loading="remoteAppiumPort===0"
-                         element-loading-spinner="el-icon-lock"
-                         element-loading-background="rgba(255, 255, 255, 1)"
-                         element-loading-text="AppiumDriver未初始化！"
-                         style="margin-top: 18px;margin-bottom: 18px">
+                    <div
+v-else v-loading="remoteAppiumPort===0"
+                      element-loading-spinner="el-icon-lock"
+                      element-loading-background="rgba(255, 255, 255, 1)"
+                      element-loading-text="AppiumDriver未初始化！"
+                      style="margin-top: 18px; margin-bottom: 18px"
+                    >
                       <el-card>
                         <strong>AppiumDriver未初始化！</strong>
                       </el-card>
@@ -2457,16 +2598,21 @@ onMounted(() => {
                   </template>
                   <div style="text-align: center">
                     <div style="margin: 8px 0px">
-                      <el-button size="mini" type="primary" :disabled="isDriverFinish" :loading="driverLoading"
-                                 @click="openDriver">初始化AppiumDriver
+                      <el-button
+size="mini" type="primary" :disabled="isDriverFinish" :loading="driverLoading"
+                        @click="openDriver"
+                        >初始化AppiumDriver
                       </el-button>
                       <div style="margin-top: 10px">
-                        <el-switch class="refresh" active-value="1"
-                                   inactive-value="0" @change="changeAutoInit"
+                        <el-switch
+v-model="isAudoInit" class="refresh"
+                          active-value="1"
+                          inactive-value="0"
                                    size="mini"
-                                   active-text="下次进入自动初始化"
-                                   active-color="#13ce66"
-                                   v-model="isAudoInit"/>
+                          active-text="下次进入自动初始化"
+                          active-color="#13ce66"
+                          @change="changeAutoInit"
+                        />
                       </div>
                     </div>
                   </div>
@@ -2477,21 +2623,28 @@ onMounted(() => {
                   <template #header>
                     <strong>扫描二维码</strong>
                   </template>
-                  <el-alert title="OPPO、vivo部分机型上传二维码后不出现在相册，需要重启后生效" type="info" show-icon :closable="false">
+                  <el-alert
+                    title="OPPO、vivo部分机型上传二维码后不出现在相册，需要重启后生效"
+                    type="info"
+                    show-icon
+                    :closable="false"
+                  >
                   </el-alert>
-                  <div style="text-align: center;margin-top: 20px">
+                  <div style="text-align: center; margin-top: 20px">
                     <el-upload
-                        drag
-                        action=""
-                        :with-credentials="true"
-                        :limit="1"
-                        :before-upload="beforeAvatarUpload"
-                        :on-exceed="limitOut"
-                        :http-request="uploadScan"
-                        list-type="picture"
+                      drag
+                      action=""
+                      :with-credentials="true"
+                      :limit="1"
+                      :before-upload="beforeAvatarUpload"
+                      :on-exceed="limitOut"
+                      :http-request="uploadScan"
+                      list-type="picture"
                     >
                       <i class="el-icon-upload"></i>
-                      <div class="el-upload__text">将二维码图片拖到此处，或<em>点击上传</em></div>
+                      <div class="el-upload__text"
+                        >将二维码图片拖到此处，或<em>点击上传</em></div
+                      >
                       <template #tip>
                         <div class="el-upload__tip">只能上传jpg/png文件</div>
                       </template>
@@ -2508,33 +2661,59 @@ onMounted(() => {
                     <el-tabs type="border-card" stretch>
                       <el-tab-pane label="上传文件">
                         <el-upload
-                            v-loading="fileLoading"
-                            drag
-                            action=""
-                            :with-credentials="true"
-                            :limit="1"
-                            :on-exceed="limitOut"
-                            :http-request="uploadFile"
+                          v-loading="fileLoading"
+                          drag
+                          action=""
+                          :with-credentials="true"
+                          :limit="1"
+                          :on-exceed="limitOut"
+                          :http-request="uploadFile"
                         >
                           <i class="el-icon-upload"></i>
-                          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                          <div class="el-upload__text"
+                            >将文件拖到此处，或<em>点击上传</em></div
+                          >
                         </el-upload>
-                        <div style="display: flex;margin-top: 5px">
-                          <el-input size="mini" v-model="pushPath" placeholder="请输入上传目标路径（加上文件名）"></el-input>
-                          <el-button style="margin-left: 5px" size="mini" type="primary" :loading="pushLoading"
-                                     :disabled="pushPath.length===0||upLoadFilePath.length===0"
-                                     @click="pushFile">Push
+                        <div style="display: flex; margin-top: 5px">
+                          <el-input
+                            v-model="pushPath"
+                            size="mini"
+                            placeholder="请输入上传目标路径（加上文件名）"
+                          ></el-input>
+                          <el-button
+style="margin-left: 5px" size="mini" type="primary" :loading="pushLoading"
+                            :disabled="
+                              pushPath.length === 0 ||
+                              upLoadFilePath.length === 0
+                            "
+                            @click="pushFile"
+                            >Push
                           </el-button>
                         </div>
                       </el-tab-pane>
                       <el-tab-pane label="拉取文件">
-                        <el-input size="mini" placeholder="请输入拉取目标路径" v-model="pullPath"></el-input>
-                        <el-button style="margin-top: 5px" size="mini" type="primary" :loading="pullLoading"
-                                   :disabled="pullPath.length===0"
-                                   @click="pullFile">Pull
+                        <el-input
+                          v-model="pullPath"
+                          size="mini"
+                          placeholder="请输入拉取目标路径"
+                        ></el-input>
+                        <el-button
+style="margin-top: 5px" size="mini" type="primary" :loading="pullLoading"
+                          :disabled="pullPath.length === 0"
+                          @click="pullFile"
+                          >Pull
                         </el-button>
-                        <a :href="pullResult" download target="_blank" v-if="pullResult.length!==0">
-                          <el-button style="margin-top: 5px;margin-left:10px" size="mini" type="success">下载文件
+                        <a
+                          v-if="pullResult.length !== 0"
+                          :href="pullResult"
+                          download
+                          target="_blank"
+                        >
+                          <el-button
+                            style="margin-top: 5px; margin-left: 10px"
+                            size="mini"
+                            type="success"
+                            >下载文件
                           </el-button>
                         </a>
                       </el-tab-pane>
@@ -2553,17 +2732,19 @@ onMounted(() => {
                   </template>
                   <div style="text-align: center">
                     <el-upload
-                        v-loading="uploadLoading"
-                        drag
-                        action=""
-                        :with-credentials="true"
-                        :limit="1"
-                        :before-upload="beforeAvatarUpload2"
-                        :on-exceed="limitOut"
-                        :http-request="uploadPackage"
+                      v-loading="uploadLoading"
+                      drag
+                      action=""
+                      :with-credentials="true"
+                      :limit="1"
+                      :before-upload="beforeAvatarUpload2"
+                      :on-exceed="limitOut"
+                      :http-request="uploadPackage"
                     >
                       <i class="el-icon-upload"></i>
-                      <div class="el-upload__text">将APK文件拖到此处，或<em>点击上传</em></div>
+                      <div class="el-upload__text"
+                        >将APK文件拖到此处，或<em>点击上传</em></div
+                      >
                       <template #tip>
                         <div class="el-upload__tip">只能上传apk文件</div>
                       </template>
@@ -2572,140 +2753,227 @@ onMounted(() => {
                 </el-card>
               </el-col>
               <el-col :span="12">
-                <el-card shadow="hover" class="url-install-box"
-                         :body-style="{position: 'absolute',top: '50%', width: '100%',paddingTop: '56px',paddingBottom: '0',boxSizing: 'border-box',transform: 'translateY(-50%)'}">
+                <el-card
+shadow="hover" class="url-install-box"
+                  :body-style="{
+                    position: 'absolute',
+                    top: '50%',
+                    width: '100%',
+                    paddingTop: '56px',
+                    paddingBottom: '0',
+                    boxSizing: 'border-box',
+                    transform: 'translateY(-50%)',
+                  }"
+                >
                   <template #header>
                     <strong>URL安装</strong>
                   </template>
                   <el-input
-                      clearable
-                      v-model="uploadUrl"
-                      size="small"
-                      placeholder="请输入apk下载链接或本地路径"
+                    v-model="uploadUrl"
+                    clearable
+                    size="small"
+                    placeholder="请输入apk下载链接或本地路径"
                   ></el-input>
-                  <div style="text-align: center;margin-top: 20px">
+                  <div style="text-align: center; margin-top: 20px">
                     <el-button
-                        size="mini"
-                        type="primary"
-                        :disabled="uploadUrl.length===0"
-                        @click="install(uploadUrl)"
-                    >发送
+                      size="mini"
+                      type="primary"
+                      :disabled="uploadUrl.length === 0"
+                      @click="install(uploadUrl)"
+                      >发送
                     </el-button>
                   </div>
                 </el-card>
               </el-col>
             </el-row>
-            <el-card shadow="hover" style="margin-top:15px">
+            <el-card shadow="hover" style="margin-top: 15px">
               <el-table :data="currAppListPageData" border>
                 <el-table-column width="90" header-align="center">
                   <template #header>
-                    <el-button size="mini" @click="refreshAppList">刷新</el-button>
+                    <el-button size="mini" @click="refreshAppList"
+                      >刷新</el-button
+                    >
                   </template>
                   <template #default="scope">
-                    <div style="display: flex;align-items: center;justify-content: center;">
-                      <el-avatar shape="square" :size="40"
-                                 :src="'data:image/png;base64,'+scope.row.appIcon"></el-avatar>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <el-avatar
+shape="square" :size="40"
+                        :src="'data:image/png;base64,' + scope.row.appIcon"
+                      ></el-avatar>
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column width="150" show-overflow-tooltip header-align="center" prop="appName" label="应用名">
+                <el-table-column
+                  width="150"
+                  show-overflow-tooltip
+                  header-align="center"
+                  prop="appName"
+                  label="应用名"
+                >
                 </el-table-column>
-                <el-table-column header-align="center" show-overflow-tooltip prop="packageName"
-                                 label="包名">
+                <el-table-column
+header-align="center" show-overflow-tooltip prop="packageName"
+                  label="包名"
+                >
                   <template #default="scope">
-                    <div style="cursor: pointer" @click="copy(scope.row.packageName)">{{ scope.row.packageName }}</div>
+                    <div
+                      style="cursor: pointer"
+                      @click="copy(scope.row.packageName)"
+                      >{{ scope.row.packageName }}</div
+                    >
                   </template>
                 </el-table-column>
-                <el-table-column header-align="center" show-overflow-tooltip prop="versionName" label="版本号"
-                                 width="120"></el-table-column>
-                <el-table-column header-align="center" show-overflow-tooltip prop="versionCode" label="子版本号"
-                                 width="120"></el-table-column>
+                <el-table-column
+header-align="center" show-overflow-tooltip prop="versionName" label="版本号"
+                  width="120"
+                ></el-table-column>
+                <el-table-column
+header-align="center" show-overflow-tooltip prop="versionCode" label="子版本号"
+                  width="120"
+                ></el-table-column>
                 <el-table-column align="center" width="200">
                   <template #header>
-                    <el-input v-model="filterAppText" size="mini" placeholder="输入应用名或包名搜索"/>
+                    <el-input
+                      v-model="filterAppText"
+                      size="mini"
+                      placeholder="输入应用名或包名搜索"
+                    />
                   </template>
                   <template #default="scope">
-                    <el-button size="mini" @click="openApp(scope.row.packageName)" type="primary">打开
+                    <el-button
+                      size="mini"
+                      type="primary"
+                      @click="openApp(scope.row.packageName)"
+                      >打开
                     </el-button>
-                    <el-button size="mini" @click="uninstallApp(scope.row.packageName)" type="danger">卸载</el-button>
+                    <el-button
+                      size="mini"
+                      type="danger"
+                      @click="uninstallApp(scope.row.packageName)"
+                      >卸载</el-button
+                    >
                   </template>
                 </el-table-column>
               </el-table>
               <Pageable
-                  :isPageSet="false"
-                  :total="filterTableData.length"
-                  :current-page="currAppListPageIndex + 1"
-                  :page-size="7"
-                  @change="changeAppListPage"
+                :is-page-set="false"
+                :total="filterTableData.length"
+                :current-page="currAppListPageIndex + 1"
+                :page-size="7"
+                @change="changeAppListPage"
               ></Pageable>
             </el-card>
           </el-tab-pane>
           <el-tab-pane label="网络抓包" name="proxy">
-            <el-button size="small" type="success" @click="startProxy">开始抓包</el-button>
+            <el-button size="small" type="success" @click="startProxy"
+              >开始抓包</el-button
+            >
             <el-button size="small" @click="installCert">下载证书</el-button>
             <el-button size="small" @click="clearProxy">取消全局代理</el-button>
-            <strong v-if="proxyConnPort!==0"
-                    style="color: #67c23a;float: right;margin-top: 5px">代理连接：{{
-                agent['host'] + ':' + proxyConnPort
-              }}</strong>
-            <span style="float: right;display: flex;
-            			   align-items: center;">
-                          <el-button size="mini" @click="getWifiList" style="margin-right: 6px">刷新</el-button>
-                          <ColorImg
-                              :src="wifiLogo"
-                              :width="18"
-                              :height="18"
-                              :color="isConnectWifi?'#67C23A':'#F56C6C'"
-                          />
-                          <span style="margin-left:6px;color: #67C23A;font-size: 16px">{{
-                              (currentWifi.length > 0 && isConnectWifi) ? currentWifi.replaceAll('"', '') : ' '
-                            }}</span>
-                        </span>
-            <iframe v-if="proxyWebPort!==0"
-                    :style="'border:1px solid #C0C4CC;;width: 100%;height: '+iFrameHeight+'px;margin-top:15px'"
-                    :src="'http://'+agent['host']+':'+proxyWebPort"></iframe>
-            <el-card v-else style="margin-top:20px">
+            <strong
+v-if="proxyConnPort!==0"
+              style="color: #67c23a; float: right; margin-top: 5px"
+              >代理连接：{{ agent['host'] + ':' + proxyConnPort }}</strong
+            >
+            <span
+style="float: right; display: flex; align-items: center">
+              <el-button
+                size="mini"
+                style="margin-right: 6px"
+                @click="getWifiList"
+                >刷新</el-button
+              >
+              <ColorImg
+                :src="wifiLogo"
+                :width="18"
+                :height="18"
+                :color="isConnectWifi ? '#67C23A' : '#F56C6C'"
+              />
+              <span style="margin-left: 6px; color: #67c23a; font-size: 16px">{{
+                currentWifi.length > 0 && isConnectWifi
+                  ? currentWifi.replaceAll('"', '')
+                  : ' '
+              }}</span>
+            </span>
+            <iframe
+v-if="proxyWebPort!==0"
+              :style="
+                'border:1px solid #C0C4CC;;width: 100%;height: ' +
+                iFrameHeight +
+                'px;margin-top:15px'
+              "
+              :src="'http://' + agent['host'] + ':' + proxyWebPort"
+            ></iframe>
+            <el-card v-else style="margin-top: 20px">
               <template #header><strong>使用教学</strong></template>
               <div style="height: 300px">
                 <el-steps direction="vertical" :active="3">
-                  <el-step title="连接Wifi" status="process"
-                           description="未连接Wifi的话，需前往Wifi列表连接你的Wifi。Wifi需要与Agent的网络互通，连接后点击刷新重新获取Wifi状态"/>
-                  <el-step title="安装证书" status="process"
-                           description="首次抓包需要安装证书，点击下载按钮后下载证书并安装。如浏览器无法访问，请确认Agent已关闭防火墙。"/>
-                  <el-step title="开始抓包" status="process"
-                           description="点击开始抓包后，就可以开始体验啦！（默认自动全局代理，如果不需要可以点击取消全局代理按钮，然后自行前往Wifi页面手动配置）"/>
+                  <el-step
+title="连接Wifi" status="process"
+                    description="未连接Wifi的话，需前往Wifi列表连接你的Wifi。Wifi需要与Agent的网络互通，连接后点击刷新重新获取Wifi状态"
+                  />
+                  <el-step
+title="安装证书" status="process"
+                    description="首次抓包需要安装证书，点击下载按钮后下载证书并安装。如浏览器无法访问，请确认Agent已关闭防火墙。"
+                  />
+                  <el-step
+title="开始抓包" status="process"
+                    description="点击开始抓包后，就可以开始体验啦！（默认自动全局代理，如果不需要可以点击取消全局代理按钮，然后自行前往Wifi页面手动配置）"
+                  />
                 </el-steps>
               </div>
             </el-card>
           </el-tab-pane>
           <el-tab-pane label="快速截图" name="screenCap">
             <el-button type="primary" size="small" @click="quickCap">
-              <el-icon :size="12" style="vertical-align: middle;">
-                <Camera/>
+              <el-icon :size="12" style="vertical-align: middle">
+                <Camera />
               </el-icon>
               截图
             </el-button>
             <el-button type="danger" size="small" @click="removeScreen">
-              <el-icon :size="12" style="vertical-align: middle;">
-                <Delete/>
+              <el-icon :size="12" style="vertical-align: middle">
+                <Delete />
               </el-icon>
               清空
             </el-button>
-            <el-card style="height: 100%;margin-top: 10px" v-if="screenUrls.length===0">
+            <el-card
+              v-if="screenUrls.length === 0"
+              style="height: 100%; margin-top: 10px"
+            >
               <el-empty description="暂无截图"></el-empty>
             </el-card>
-            <el-row :gutter="20" v-else>
-              <el-col :xs="8"
-                      :sm="8"
-                      :md="8"
-                      :lg="4"
-                      :xl="4" v-for="u in screenUrls" style="margin-top: 10px">
-                <el-card shadow="hover" :body-style="{padding:'10px'}">
-                  <el-image :src="u" :preview-src-list="screenUrls" hide-on-click-modal></el-image>
-                  <div style="text-align: center;margin-top: 5px">
-                    <el-button type="primary" plain size="mini" @click="downloadImg(u)">
-                      <el-icon :size="12" style="vertical-align: middle;">
-                        <Download/>
+            <el-row v-else :gutter="20">
+              <el-col
+                v-for="u in screenUrls"
+                :xs="8"
+                :sm="8"
+                :md="8"
+                :lg="4"
+                :xl="4"
+                style="margin-top: 10px"
+              >
+                <el-card shadow="hover" :body-style="{ padding: '10px' }">
+                  <el-image
+                    :src="u"
+                    :preview-src-list="screenUrls"
+                    hide-on-click-modal
+                  ></el-image>
+                  <div style="text-align: center; margin-top: 5px">
+                    <el-button
+                      type="primary"
+                      plain
+                      size="mini"
+                      @click="downloadImg(u)"
+                    >
+                      <el-icon :size="12" style="vertical-align: middle">
+                        <Download />
                       </el-icon>
                       保存图片
                     </el-button>
@@ -2716,44 +2984,74 @@ onMounted(() => {
           </el-tab-pane>
           <el-tab-pane label="Terminal" name="terminal">
             <el-alert
-                title="注意事项"
-                type="warning"
-                description="该功能仍处于Beta测试中，暂时屏蔽reboot、rm、su等风险指令"
-                show-icon
-                :closable="false"
-                style="margin-bottom: 10px"
+              title="注意事项"
+              type="warning"
+              description="该功能仍处于Beta测试中，暂时屏蔽reboot、rm、su等风险指令"
+              show-icon
+              :closable="false"
+              style="margin-bottom: 10px"
             />
             <el-tabs stretch type="border-card">
               <el-tab-pane label="Shell">
                 <el-card
-                    style="border: 0px"
-                    :body-style="{color:'#FFFFFF',backgroundColor:'#303133',lineHeight:'1.5'}">
-                  <el-scrollbar noresize ref="terScroll" :style="'height:'+terminalHeight+'px;min-height:450px'">
-                    <div v-html="c" v-for="c in cmdOutPut" style="white-space: pre-wrap">
+                  style="border: 0px"
+                  :body-style="{
+                    color: '#FFFFFF',
+                    backgroundColor: '#303133',
+                    lineHeight: '1.5',
+                  }"
+                >
+                  <el-scrollbar
+                    ref="terScroll"
+                    noresize
+                    :style="'height:' + terminalHeight + 'px;min-height:450px'"
+                  >
+                    <div
+                      v-for="c in cmdOutPut"
+                      style="white-space: pre-wrap"
+                      v-html="c"
+                    >
                     </div>
                   </el-scrollbar>
-                  <div style="display: flex;margin-top: 10px">
-                    <el-input @keyup.enter="sendCmd" size="mini" v-model="cmdInput" placeholder="输入指令后，点击Send或回车发送">
+                  <div style="display: flex; margin-top: 10px">
+                    <el-input
+                      v-model="cmdInput"
+                      size="mini"
+                      placeholder="输入指令后，点击Send或回车发送"
+                      @keyup.enter="sendCmd"
+                    >
                       <template #prepend>{{ cmdUser + ':/ $' }}</template>
                     </el-input>
-                    <el-button size="mini" @click="sendCmd" :disabled="cmdInput.length===0||!cmdIsDone"
-                               style="margin-left: 5px" type="primary">Send
+                    <el-button
+size="mini" :disabled="cmdInput.length===0||!cmdIsDone" style="margin-left: 5px"
+                      type="primary"
+                      @click="sendCmd"
+                      >Send
                     </el-button>
-                    <el-button size="mini" @click="stopCmd" :disabled="cmdIsDone"
-                               style="margin-left: 5px" type="danger">Stop
+                    <el-button
+size="mini" :disabled="cmdIsDone" style="margin-left: 5px"
+                      type="danger"
+                      @click="stopCmd"
+                      >Stop
                     </el-button>
-                    <el-button size="mini" @click="clearCmd"
-                               style="margin-left: 5px" type="warning">Clear
+                    <el-button
+size="mini" style="margin-left: 5px"
+                               type="warning" @click="clearCmd">Clear
                     </el-button>
                   </div>
                 </el-card>
               </el-tab-pane>
               <el-tab-pane label="Logcat">
                 <el-card
-                    style="border: 0px"
-                    :body-style="{color:'#FFFFFF',backgroundColor:'#303133',lineHeight:'1.5'}">
-                  <div style="display: flex;margin-bottom: 10px">
-                    <el-select size="mini" v-model="logcatFilter.level">
+                  style="border: 0px"
+                  :body-style="{
+                    color: '#FFFFFF',
+                    backgroundColor: '#303133',
+                    lineHeight: '1.5',
+                  }"
+                >
+                  <div style="display: flex; margin-bottom: 10px">
+                    <el-select v-model="logcatFilter.level" size="mini">
                       <el-option label="VERBOSE" value="V"></el-option>
                       <el-option label="DEBUG" value="D"></el-option>
                       <el-option label="INFO" value="I"></el-option>
@@ -2762,22 +3060,35 @@ onMounted(() => {
                       <el-option label="FATAL" value="F"></el-option>
                       <el-option label="SILENT" value="S"></el-option>
                     </el-select>
-                    <el-input style="margin-left: 5px" size="mini" v-model="logcatFilter.filter"
-                              placeholder="请输入输入过滤文本">
+                    <el-input
+v-model="logcatFilter.filter" style="margin-left: 5px" size="mini"
+                      placeholder="请输入输入过滤文本"
+                    >
                       <template #prepend>| grep</template>
                     </el-input>
-                    <el-button size="mini" @click="sendLogcat"
-                               style="margin-left: 5px" type="primary">Search
+                    <el-button
+size="mini" style="margin-left: 5px"
+                               type="primary" @click="sendLogcat">Search
                     </el-button>
-                    <el-button size="mini" @click="stopLogcat"
-                               style="margin-left: 5px" type="danger">Stop
+                    <el-button
+size="mini" style="margin-left: 5px"
+                               type="danger" @click="stopLogcat">Stop
                     </el-button>
-                    <el-button size="mini" @click="clearLogcat"
-                               style="margin-left: 5px" type="warning">Clear
+                    <el-button
+size="mini" style="margin-left: 5px"
+                               type="warning" @click="clearLogcat">Clear
                     </el-button>
                   </div>
-                  <el-scrollbar noresize ref="logcatScroll" :style="'height:'+terminalHeight+'px;min-height:450px'">
-                    <div v-html="l" v-for="l in logcatOutPut" style="white-space: pre-wrap">
+                  <el-scrollbar
+                    ref="logcatScroll"
+                    noresize
+                    :style="'height:' + terminalHeight + 'px;min-height:450px'"
+                  >
+                    <div
+                      v-for="l in logcatOutPut"
+                      style="white-space: pre-wrap"
+                      v-html="l"
+                    >
                     </div>
                   </el-scrollbar>
                 </el-card>
@@ -2789,95 +3100,157 @@ onMounted(() => {
               <el-collapse accordion style="margin-bottom: 20px">
                 <el-collapse-item>
                   <template #title>
-                    <div style="display: flex; align-items: center;width: 100%;justify-content: space-between;">
-                      <strong style="font-size: 15px;color: #909399;margin-left: 10px">用例详情</strong>
-                      <el-button style="margin-right: 10px" type="danger" size="mini" @click="removeCase">取消关联
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        width: 100%;
+                        justify-content: space-between;
+                      "
+                    >
+                      <strong
+                        style="
+                          font-size: 15px;
+                          color: #909399;
+                          margin-left: 10px;
+                        "
+                        >用例详情</strong
+                      >
+                      <el-button
+                        style="margin-right: 10px"
+                        type="danger"
+                        size="mini"
+                        @click="removeCase"
+                        >取消关联
                       </el-button>
                     </div>
                   </template>
                   <el-descriptions :column="2" size="medium" border>
-                    <el-descriptions-item width="100px" label="用例Id">{{ testCase['id'] }}</el-descriptions-item>
-                    <el-descriptions-item width="100px" label="用例名称">{{ testCase.name }}</el-descriptions-item>
+                    <el-descriptions-item width="100px" label="用例Id">{{
+                      testCase['id']
+                    }}</el-descriptions-item>
+                    <el-descriptions-item width="100px" label="用例名称">{{
+                      testCase.name
+                    }}</el-descriptions-item>
                     <el-descriptions-item label="所属项目">
-                      <div style=" display: flex;align-items: center;">
+                      <div style="display: flex; align-items: center">
                         <el-avatar
-                            style="margin-right: 10px"
-                            :size="27"
-                            :src="project['projectImg'].length>0?project['projectImg']:defaultLogo"
-                            shape="square"
-                        ></el-avatar
-                        >
+                          style="margin-right: 10px"
+                          :size="27"
+                          :src="
+                            project['projectImg'].length > 0
+                              ? project['projectImg']
+                              : defaultLogo
+                          "
+                          shape="square"
+                        ></el-avatar>
                         {{ project['projectName'] }}
                       </div>
                     </el-descriptions-item>
                     <el-descriptions-item label="所属平台">
-                      <div style=" display: flex;align-items: center;">
+                      <div style="display: flex; align-items: center">
                         <el-avatar
-                            style="margin-right: 10px"
-                            :size="27"
-                            :src="getImg(testCase['platform']===1?'ANDROID':'IOS')"
-                            shape="square"
-                        ></el-avatar
-                        >
+                          style="margin-right: 10px"
+                          :size="27"
+                          :src="
+                            getImg(
+                              testCase['platform'] === 1 ? 'ANDROID' : 'IOS'
+                            )
+                          "
+                          shape="square"
+                        ></el-avatar>
                         {{ testCase['platform'] === 1 ? '安卓' : 'iOS' }}
                       </div>
                     </el-descriptions-item>
                     <el-descriptions-item label="模块">
-                      {{ testCase['modulesDTO'] !== null ? testCase['modulesDTO'].name : "" }}
+                      {{
+                        testCase['modulesDTO'] !== null
+                          ? testCase['modulesDTO'].name
+                          : ''
+                      }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="版本名称">{{ testCase['version'] }}</el-descriptions-item>
-                    <el-descriptions-item label="设计人">{{ testCase['designer'] }}</el-descriptions-item>
-                    <el-descriptions-item label="最后修改日期">{{ testCase['editTime'] }}</el-descriptions-item>
-                    <el-descriptions-item label="用例描述">{{ testCase['des'] }}</el-descriptions-item>
+                    <el-descriptions-item label="版本名称">{{
+                      testCase['version']
+                    }}</el-descriptions-item>
+                    <el-descriptions-item label="设计人">{{
+                      testCase['designer']
+                    }}</el-descriptions-item>
+                    <el-descriptions-item label="最后修改日期">{{
+                      testCase['editTime']
+                    }}</el-descriptions-item>
+                    <el-descriptions-item label="用例描述">{{
+                      testCase['des']
+                    }}</el-descriptions-item>
                   </el-descriptions>
                 </el-collapse-item>
               </el-collapse>
-              <el-tabs type="border-card" stretch v-model="activeTab2">
+              <el-tabs v-model="activeTab2" type="border-card" stretch>
                 <el-tab-pane label="步骤列表" name="step">
-                  <step-list :is-show-run="true" :platform="1" :is-driver-finish="isDriverFinish"
-                             :case-id="testCase['id']"
-                             :project-id="project['id']"
-                             :debug-loading="debugLoading"
-                             @runStep="runStep"/>
+                  <step-list
+:is-show-run="true" :platform="1" :is-driver-finish="isDriverFinish"
+                    :case-id="testCase['id']"
+                    :project-id="project['id']"
+                    :debug-loading="debugLoading"
+                    @runStep="runStep"
+                  />
                 </el-tab-pane>
                 <el-tab-pane label="运行日志" name="log">
-                  <step-log :is-read-only="false" :debug-loading="debugLoading" :step-log="stepLog"
-                            @clearLog="clearLog" @stopStep="stopStep"/>
+                  <step-log
+:is-read-only="false" :debug-loading="debugLoading" :step-log="stepLog"
+                    @clearLog="clearLog"
+                    @stopStep="stopStep"
+                  />
                 </el-tab-pane>
               </el-tabs>
             </div>
             <div v-else>
-              <span style="color: #909399;margin-right: 10px">关联项目</span>
-              <el-select size="mini" v-model="project" value-key="id" placeholder="请选择关联项目">
+              <span style="color: #909399; margin-right: 10px">关联项目</span>
+              <el-select
+                v-model="project"
+                size="mini"
+                value-key="id"
+                placeholder="请选择关联项目"
+              >
                 <el-option
-                    v-for="item in store.state.projectList"
-                    :key="item.id"
-                    :value="item"
-                    :label="item['projectName']"
+                  v-for="item in store.state.projectList"
+                  :key="item.id"
+                  :value="item"
+                  :label="item['projectName']"
                 >
-                  <div style=" display: flex;align-items: center;">
+                  <div style="display: flex; align-items: center">
                     <el-avatar
-                        style="margin-right: 10px"
-                        :size="32"
-                        :src="item['projectImg'].length>0?item['projectImg']:defaultLogo"
-                        shape="square"
-                    ></el-avatar
-                    >
+                      style="margin-right: 10px"
+                      :size="32"
+                      :src="
+                        item['projectImg'].length > 0
+                          ? item['projectImg']
+                          : defaultLogo
+                      "
+                      shape="square"
+                    ></el-avatar>
                     {{ item['projectName'] }}
                   </div>
                 </el-option>
               </el-select>
-              <el-button v-if="project!==null" size="mini" type="primary" round style="position: absolute;right: 20px"
-                         @click="caseList.open()">
+              <el-button
+v-if="project!==null" size="mini" type="primary" round style="position: absolute;right: 20px"
+                @click="caseList.open()"
+              >
                 新增用例
               </el-button>
-              <test-case-list ref="caseList" v-if="project!==null"
-                              :project-id="project['id']"
-                              :platform="1"
-                              :is-read-only="true"
-                              @select-case="selectCase"></test-case-list>
-              <el-card style="height: 100%;margin-top:20px">
-                <el-result icon="info" title="提示" subTitle="该功能需要先从上方关联测试用例">
+              <test-case-list
+v-if="project!==null" ref="caseList"
+                :project-id="project['id']"
+                :platform="1"
+                :is-read-only="true"
+                @select-case="selectCase"
+              ></test-case-list>
+              <el-card style="height: 100%; margin-top: 20px">
+                <el-result
+                  icon="info"
+                  title="提示"
+                  sub-title="该功能需要先从上方关联测试用例"
+                >
                 </el-result>
               </el-card>
             </div>
@@ -2886,99 +3259,116 @@ onMounted(() => {
             <el-tabs stretch type="border-card">
               <el-tab-pane label="原生控件">
                 <div v-show="isShowImg">
-                  <div style="margin-bottom: 15px; display: flex;align-items: center;justify-content: space-between;">
+                  <div
+                    style="
+                      margin-bottom: 15px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-between;
+                    "
+                  >
                     <el-button
-                        type="primary"
-                        size="mini"
-                        :loading="elementLoading"
-                        @click="getElement"
-                        :disabled="isDriverFinish === false"
+                      type="primary"
+                      size="mini"
+                      :loading="elementLoading"
+                      :disabled="isDriverFinish === false"
+                      @click="getElement"
                     >
-                      <el-icon :size="12" style="vertical-align: middle;">
-                        <Search/>
+                      <el-icon :size="12" style="vertical-align: middle">
+                        <Search />
                       </el-icon>
                       重新获取控件元素
-                    </el-button
-                    >
-                    <span style="margin-right:10px;color: #909399;font-size: 14px; cursor: pointer"
-                          @click="copy(activity)"
-                          v-if="activity.length > 0">当前Activity： {{ activity }}</span>
+                    </el-button>
+                    <span
+v-if="activity.length > 0"
+                      style="margin-right:10px;color: #909399;font-size: 14px; cursor: pointer"
+                      "
+                          @click="copy(activity)">当前Activity： {{ activity }}</span>
                   </div>
-                  <el-row
-                      :gutter="10"
-                  >
+                  <el-row :gutter="10">
                     <el-col :span="7">
                       <el-card shadow="hover">
                         <div
-                            :style="
-                      'width: 100%;background-image: url(' +
-                      imgUrl +
-                      ');background-size: 100% 100%;'
-                    "
+                          :style="
+                            'width: 100%;background-image: url(' +
+                            imgUrl +
+                            ');background-size: 100% 100%;'
+                          "
                         >
-                          <canvas id="debugPic" @mousedown="touchstart"></canvas>
+                          <canvas
+                            id="debugPic"
+                            @mousedown="touchstart"
+                          ></canvas>
                         </div>
                       </el-card>
                       <el-card
-                          :body-style="{ padding: '12px' }"
-                          shadow="hover"
-                          v-if="webViewData.length > 0"
-                          style="margin-top: 10px"
+                        v-if="webViewData.length > 0"
+                        :body-style="{ padding: '12px' }"
+                        shadow="hover"
+                        style="margin-top: 10px"
                       >
                         <el-table :data="webViewData" border>
                           <el-table-column
-                              label="WebView列表"
-                              align="center"
-                              :show-overflow-tooltip="true"
+                            label="WebView列表"
+                            align="center"
+                            :show-overflow-tooltip="true"
                           >
                             <template #default="scope">
-                        <span
-                            style="cursor: pointer"
-                            @click="copy(scope.row)"
-                        >
-                          {{ scope.row }}</span
-                        >
+                              <span
+                                style="cursor: pointer"
+                                @click="copy(scope.row)"
+                              >
+                                {{ scope.row }}</span
+                              >
                             </template>
                           </el-table-column>
                         </el-table>
                       </el-card>
                     </el-col>
                     <el-col :span="9">
-                      <el-card
-                          shadow="hover"
-                          v-if="isShowTree"
-                      >
+                      <el-card v-if="isShowTree" shadow="hover">
                         <el-input
-                            style="margin-bottom: 10px"
-                            size="mini"
+                          v-model="filterText"
+                          style="margin-bottom: 10px"
+                          size="mini"
                             placeholder="输入class或resource-id进行过滤"
-                            v-model="filterText"
                         ></el-input>
                         <div style="height: 660px">
                           <el-scrollbar
-                              class="element-tree-scrollbar"
-                              style="height: 100%"
+                            class="element-tree-scrollbar"
+                            style="height: 100%"
                           >
                             <el-tree
-                                :indent="13"
-                                :filter-node-method="filterNode"
-                                :default-expanded-keys="currentId"
-                                node-key="id"
-                                style="margin-top: 10px; margin-bottom: 20px"
+                              ref="tree"
+                              :indent="13"
+                              :filter-node-method="filterNode"
+                              :default-expanded-keys="currentId"
+                              node-key="id"
+                              style="margin-top: 10px; margin-bottom: 20px"
                                 :highlight-current="true"
-                                ref="tree"
-                                :accordion="true"
-                                :data="elementData"
-                                @node-click="handleNodeClick"
+                              :accordion="true"
+                              :data="elementData"
+                              @node-click="handleNodeClick"
                             >
                               <template #default="{ node, data }">
-                          <span style="font-size: 14px" v-if="data.detail['resource-id']">
-                            {{ node.label.substring(0, node.label.indexOf('>')) + ' ' }}
-                            <span style="color: #F55781">resource-id</span>={{
-                              '"' + data.detail['resource-id'] + '">'
-                            }}
-                          </span>
-                                <span style="font-size: 14px" v-else>{{ node.label }}</span>
+                                <span
+                                  v-if="data.detail['resource-id']"
+                                  style="font-size: 14px"
+                                >
+                                  {{
+                                    node.label.substring(
+                                      0,
+                                      node.label.indexOf('>')
+                                    ) + ' '
+                                  }}
+                                  <span style="color: #f55781">resource-id</span
+                                  >={{
+                                    '"' + data.detail['resource-id'] + '">'
+                                  }}
+                                </span>
+                                <span v-else style="font-size: 14px">{{
+                                  node.label
+                                }}</span>
                               </template>
                             </el-tree>
                           </el-scrollbar>
@@ -2986,197 +3376,280 @@ onMounted(() => {
                       </el-card>
                     </el-col>
                     <el-col :span="8">
-                      <el-card
-                          shadow="hover"
-                          v-if="isShowTree"
-                      >
+                      <el-card v-if="isShowTree" shadow="hover">
                         <div style="height: 695px">
-                          <div style="text-align: center; margin-bottom: 10px" v-if="project && project['id']">
+                          <div
+                            v-if="project && project['id']"
+                            style="text-align: center; margin-bottom: 10px"
+                          >
                             <el-button
-                                :disabled="elementDetail === null"
-                                plain
-                                size="small"
-                                type="primary"
-                                round
-                                @click="toAddElement('','')"
-                            >添加控件
-                            </el-button
-                            >
+                              :disabled="elementDetail === null"
+                              plain
+                              size="small"
+                              type="primary"
+                              round
+                              @click="toAddElement('', '')"
+                              >添加控件
+                            </el-button>
                             <el-button
-                                v-if="
-                        elementDetail && elementDetail['xpath'] && isDriverFinish
-                      "
-                                :loading="elementScreenLoading"
-                                style="margin-left: 5px"
-                                plain
-                                size="small"
-                                round
-                                @click="getEleScreen(elementDetail['xpath'])"
-                            >控件快照
-                            </el-button
-                            >
+                              v-if="
+                                elementDetail &&
+                                elementDetail['xpath'] &&
+                                isDriverFinish
+                              "
+                              :loading="elementScreenLoading"
+                              style="margin-left: 5px"
+                              plain
+                              size="small"
+                              round
+                              @click="getEleScreen(elementDetail['xpath'])"
+                              >控件快照
+                            </el-button>
                           </div>
-                          <el-alert style="margin-bottom: 10px" v-else title="关联项目后即可保存控件" type="info" show-icon
-                                    close-text="Get!"/>
+                          <el-alert
+                            v-else
+                            style="margin-bottom: 10px"
+                            title="关联项目后即可保存控件"
+                            type="info"
+                            show-icon
+                            close-text="Get!"
+                          />
                           <el-scrollbar
-                              style="height: 100%"
-                              class="element-tree-scrollbar"
+                            style="height: 100%"
+                            class="element-tree-scrollbar"
                           >
                             <el-form
-                                label-position="left"
-                                class="element-table"
-                                label-width="100px"
-                                v-if="elementDetail !== null"
+                              v-if="elementDetail !== null"
+                              label-position="left"
+                              class="element-table"
+                              label-width="100px"
                             >
                               <el-form-item
-                                  label="class"
-                                  style="cursor: pointer"
-                                  @click="copy(elementDetail['class'])"
+                                label="class"
+                                style="cursor: pointer"
+                                @click="copy(elementDetail['class'])"
                               >
                                 <span>{{ elementDetail['class'] }}</span>
                               </el-form-item>
                               <el-form-item
-                                  label="resource-id"
-                                  style="cursor: pointer"
-                                  v-if="elementDetail['resource-id']"
+                                v-if="elementDetail['resource-id']"
+                                label="resource-id"
+                                style="cursor: pointer"
                               >
-                                <span @click="copy(elementDetail['resource-id'])">{{
-                                    elementDetail['resource-id']
-                                  }}</span>
-                                <el-icon color="green" size="16" v-if="project && project['id']"
-                                         style="vertical-align: middle;margin-left: 10px"
-                                         @click="toAddElement('id', elementDetail['resource-id'])">
-                                  <Pointer/>
+                                <span
+                                  @click="copy(elementDetail['resource-id'])"
+                                  >{{ elementDetail['resource-id'] }}</span
+                                >
+                                <el-icon
+v-if="project && project['id']" color="green" size="16"
+                                  style="
+                                    vertical-align: middle;
+                                    margin-left: 10px;
+                                  "
+                                  @click="
+                                    toAddElement(
+                                      'id',
+                                      elementDetail['resource-id']
+                                    )
+                                  "
+                                >
+                                  <Pointer />
                                 </el-icon>
-
                               </el-form-item>
                               <el-form-item label="xpath推荐">
-                                <el-table stripe empty-text="暂无xpath推荐语法" border :data="findBestXpath(elementDetail)"
-                                          :show-header="false">
+                                <el-table
+stripe empty-text="暂无xpath推荐语法" border :data="findBestXpath(elementDetail)"
+                                  :show-header="false"
+                                >
                                   <el-table-column>
                                     <template #default="scope">
-                                      <span style="cursor: pointer" @click="copy(scope.row)">{{ scope.row }}</span>
-                                      <el-icon color="green" size="16" v-if="project && project['id']"
-                                               style="vertical-align: middle;margin-left: 10px"
-                                               @click="toAddElement('xpath', scope.row)">
-                                        <Pointer/>
+                                      <span
+                                        style="cursor: pointer"
+                                        @click="copy(scope.row)"
+                                        >{{ scope.row }}</span
+                                      >
+                                      <el-icon
+v-if="project && project['id']" color="green" size="16"
+                                        style="
+                                          vertical-align: middle;
+                                          margin-left: 10px;
+                                        "
+                                        @click="
+                                          toAddElement('xpath', scope.row)
+                                        "
+                                      >
+                                        <Pointer />
                                       </el-icon>
                                     </template>
                                   </el-table-column>
                                 </el-table>
                               </el-form-item>
-                              <el-form-item label="绝对路径" style="cursor: pointer">
-                                <span @click="copy(elementDetail['xpath'])">{{ elementDetail['xpath'] }}</span>
-                                <el-icon color="green" size="16" v-if="project && project['id']"
-                                         style="vertical-align: middle;margin-left: 10px"
-                                         @click="toAddElement('xpath', elementDetail['xpath'])">
-                                  <Pointer/>
+                              <el-form-item
+                                label="绝对路径"
+                                style="cursor: pointer"
+                              >
+                                <span @click="copy(elementDetail['xpath'])">{{
+                                  elementDetail['xpath']
+                                }}</span>
+                                <el-icon
+v-if="project && project['id']" color="green" size="16"
+                                  style="
+                                    vertical-align: middle;
+                                    margin-left: 10px;
+                                  "
+                                  @click="
+                                    toAddElement(
+                                      'xpath',
+                                      elementDetail['xpath']
+                                    )
+                                  "
+                                >
+                                  <Pointer />
                                 </el-icon>
-
                               </el-form-item>
                               <el-form-item
-                                  label="text"
-                                  style="cursor: pointer"
-                                  @click="copy(elementDetail['text'])"
+                                label="text"
+                                style="cursor: pointer"
+                                @click="copy(elementDetail['text'])"
                               >
                                 <span>{{ elementDetail['text'] }}</span>
                               </el-form-item>
                               <el-form-item
-                                  label="content-desc"
-                                  style="cursor: pointer"
-                                  v-if="elementDetail['content-desc']"
-                                  @click="copy(elementDetail['content-desc'])"
+                                v-if="elementDetail['content-desc']"
+                                label="content-desc"
+                                style="cursor: pointer"
+                                @click="copy(elementDetail['content-desc'])"
                               >
                                 <span>{{ elementDetail['content-desc'] }}</span>
                               </el-form-item>
                               <el-form-item
-                                  label="package"
-                                  style="cursor: pointer"
-                                  @click="copy(elementDetail['package'])"
+                                label="package"
+                                style="cursor: pointer"
+                                @click="copy(elementDetail['package'])"
                               >
                                 <span>{{ elementDetail['package'] }}</span>
                               </el-form-item>
-                              <el-form-item label="中心坐标" style="cursor: pointer">
-                                <span @click="copy(computedCenter(elementDetail['bStart'], elementDetail['bEnd']))">{{
-                                    computedCenter(elementDetail['bStart'], elementDetail['bEnd'])
-                                  }}</span>
-                                <el-icon color="green" size="16" v-if="project && project['id']"
-                                         style="vertical-align: middle;margin-left: 10px"
-                                         @click="toAddElement('point', computedCenter(elementDetail['bStart'], elementDetail['bEnd']))">
-                                  <Pointer/>
+                              <el-form-item
+                                label="中心坐标"
+                                style="cursor: pointer"
+                              >
+                                <span
+                                  @click="
+                                    copy(
+                                      computedCenter(
+                                        elementDetail['bStart'],
+                                        elementDetail['bEnd']
+                                      )
+                                    )
+                                  "
+                                  >{{
+                                    computedCenter(
+                                      elementDetail['bStart'],
+                                      elementDetail['bEnd']
+                                    )
+                                  }}</span
+                                >
+                                <el-icon
+v-if="project && project['id']" color="green" size="16"
+                                  style="
+                                    vertical-align: middle;
+                                    margin-left: 10px;
+                                  "
+                                  @click="
+                                    toAddElement(
+                                      'point',
+                                      computedCenter(
+                                        elementDetail['bStart'],
+                                        elementDetail['bEnd']
+                                      )
+                                    )
+                                  "
+                                >
+                                  <Pointer />
                                 </el-icon>
-
                               </el-form-item>
                               <el-form-item label="index">
                                 <span>{{ elementDetail['index'] }}</span>
                               </el-form-item>
                               <el-form-item label="是否可勾选">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['checkable'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['checkable'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否勾选">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['checked'])"
-                                    disabled
+                                  :value="JSON.parse(elementDetail['checked'])"
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否可点击">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['clickable'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['clickable'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否被选">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['selected'])"
-                                    disabled
+                                  :value="JSON.parse(elementDetail['selected'])"
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否显示">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['displayed'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['displayed'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否可用">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['enabled'])"
-                                    disabled
+                                  :value="JSON.parse(elementDetail['enabled'])"
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否可聚焦">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['focusable'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['focusable'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否聚焦">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['focused'])"
-                                    disabled
+                                  :value="JSON.parse(elementDetail['focused'])"
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否支持长按">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['long-clickable'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['long-clickable'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
                               <el-form-item label="是否支持滚动">
                                 <el-switch
-                                    :value="JSON.parse(elementDetail['scrollable'])"
-                                    disabled
+                                  :value="
+                                    JSON.parse(elementDetail['scrollable'])
+                                  "
+                                  disabled
                                 >
                                 </el-switch>
                               </el-form-item>
@@ -3190,25 +3663,30 @@ onMounted(() => {
                     </el-col>
                   </el-row>
                 </div>
-                <el-card style="height: 100%" v-show="!isShowImg">
-                  <el-result icon="info" title="提示" subTitle="请先获取控件元素，该功能需要初始化Driver">
+                <el-card v-show="!isShowImg" style="height: 100%">
+                  <el-result
+                    icon="info"
+                    title="提示"
+                    sub-title="请先获取控件元素，该功能需要初始化Driver"
+                  >
                     <template #extra>
-                      <el-button size="mini" type="primary" :disabled="isDriverFinish" :loading="driverLoading"
-                                 @click="openDriver">初始化AppiumDriver
+                      <el-button
+size="mini" type="primary" :disabled="isDriverFinish" :loading="driverLoading"
+                        @click="openDriver"
+                        >初始化AppiumDriver
                       </el-button>
                       <el-button
-                          type="primary"
-                          size="mini"
-                          :loading="elementLoading"
-                          @click="getElement"
-                          :disabled="isDriverFinish === false"
+                        type="primary"
+                        size="mini"
+                        :loading="elementLoading"
+                        :disabled="isDriverFinish === false"
+                        @click="getElement"
                       >
-                        <el-icon :size="12" style="vertical-align: middle;">
-                          <Search/>
+                        <el-icon :size="12" style="vertical-align: middle">
+                          <Search />
                         </el-icon>
                         获取控件元素
-                      </el-button
-                      >
+                      </el-button>
                     </template>
                   </el-result>
                 </el-card>
@@ -3217,126 +3695,160 @@ onMounted(() => {
                 <div style="margin-bottom: 10px">
                   <el-select v-model="selectPocoType" size="mini">
                     <el-option
-                        v-for="item in pocoTypeList"
-                        :key="item.name"
-                        :value="item.value"
-                        :label="item.name"
+                      v-for="item in pocoTypeList"
+                      :key="item.name"
+                      :value="item.value"
+                      :label="item.name"
                     >
-                      <div style="display: flex;align-items: center">
+                      <div style="display: flex; align-items: center">
                         <el-avatar
-                            style="margin-right: 10px"
-                            :size="28"
-                            :src="getImg(item.img)"
-                            shape="square"
-                        ></el-avatar
-                        >
+                          style="margin-right: 10px"
+                          :size="28"
+                          :src="getImg(item.img)"
+                          shape="square"
+                        ></el-avatar>
                         {{ item.name }}
                       </div>
                     </el-option>
                   </el-select>
-                  <el-button style="margin-left: 10px" type="primary" :loading="pocoLoading" size="mini"
-                             :disabled="selectPocoType.length===0"
-                             @click="getPoco(selectPocoType)">获取Poco控件
+                  <el-button
+style="margin-left: 10px" type="primary" :loading="pocoLoading" size="mini"
+                    :disabled="selectPocoType.length === 0"
+                    @click="getPoco(selectPocoType)"
+                    >获取Poco控件
                   </el-button>
-                  <el-link style="position: absolute;right:20px;" type="primary"
-                           href="https://poco.readthedocs.io/en/latest/source/doc/integration.html" target="_blank">
+                  <el-link
+style="position: absolute;right:20px;" type="primary"
+                    href="https://poco.readthedocs.io/en/latest/source/doc/integration.html"
+                    target="_blank"
+                  >
                     Poco-SDK 接入指南
                   </el-link>
                 </div>
-                <el-row
-                    :gutter="10"
-                    v-show="isShowPocoImg"
-                >
+                <el-row v-show="isShowPocoImg" :gutter="10">
                   <el-col :span="8">
                     <el-card shadow="hover">
                       <div
-                          :style="
-                             'width: 100%;background-image: url(' +
+                        :style="
+                          'width: 100%;background-image: url(' +
                           imgUrl +
-                        ');background-size: 100% 100%;'
-                                        "
+                          ');background-size: 100% 100%;'
+                        "
                       >
-                        <canvas id="debugPocoPic" @mousedown="touchstartpoco"></canvas>
+                        <canvas
+                          id="debugPocoPic"
+                          @mousedown="touchstartpoco"
+                        ></canvas>
                       </div>
                     </el-card>
                   </el-col>
                   <el-col :span="8">
-                    <el-card
-                        shadow="hover"
-                    >
+                    <el-card shadow="hover">
                       <div style="height: 660px">
                         <el-scrollbar
-                            class="element-tree-scrollbar"
-                            style="height: 100%"
+                          class="element-tree-scrollbar"
+                          style="height: 100%"
                         >
                           <el-tree
-                              :indent="13"
-                              :default-expanded-keys="currentPocoId"
-                              node-key="id"
-                              style="margin-top: 10px; margin-bottom: 20px"
-                              :highlight-current="true"
-                              ref="pocoTree"
-                              :accordion="true"
-                              :data="pocoData"
-                              @node-click="handlePocoClick"
+                            ref="pocoTree"
+                            :indent="13"
+                            :default-expanded-keys="currentPocoId"
+                            node-key="id"
+                            style="margin-top: 10px; margin-bottom: 20px"
+                            :highlight-current="true"
+                            :accordion="true"
+                            :data="pocoData"
+                            @node-click="handlePocoClick"
                           >
                             <template #default="{ node, data }">
-                              <div style="margin-right: 5px" v-if="data.payload">
-                                <el-icon v-if="data.payload.type==='Root'||data.payload.type==='Scene'" :size="15"
-                                         style="margin-top: 3px;color:#67C23A">
-                                  <Operation/>
+                              <div
+                                v-if="data.payload"
+                                style="margin-right: 5px"
+                              >
+                                <el-icon
+v-if="data.payload.type==='Root'||data.payload.type==='Scene'" :size="15"
+                                  style="margin-top: 3px; color: #67c23a"
+                                >
+                                  <Operation />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Node'" :size="15"
-                                         style="margin-top: 3px;color:#67C23A">
-                                  <Share/>
+                                <el-icon
+v-if="data.payload.type==='Node'" :size="15"
+                                  style="margin-top: 3px; color: #67c23a"
+                                >
+                                  <Share />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Button'" :size="15"
-                                         style="margin-top: 3px;color:#409EFF">
-                                  <HelpFilled/>
+                                <el-icon
+v-if="data.payload.type==='Button'" :size="15"
+                                  style="margin-top: 3px; color: #409eff"
+                                >
+                                  <HelpFilled />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Layer'" :size="15"
-                                         style="margin-top: 3px;color:#409EFF">
-                                  <Coin/>
+                                <el-icon
+v-if="data.payload.type==='Layer'" :size="15"
+                                  style="margin-top: 3px; color: #409eff"
+                                >
+                                  <Coin />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Image'||data.payload.type==='Sprite'" :size="15"
-                                         style="margin-top: 3px;color:#67C23A">
-                                  <Picture/>
+                                <el-icon
+v-if="data.payload.type==='Image'||data.payload.type==='Sprite'" :size="15"
+                                  style="margin-top: 3px; color: #67c23a"
+                                >
+                                  <Picture />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Camera'" :size="15"
-                                         style="margin-top: 3px;color:#409EFF">
-                                  <VideoCamera/>
+                                <el-icon
+v-if="data.payload.type==='Camera'" :size="15"
+                                  style="margin-top: 3px; color: #409eff"
+                                >
+                                  <VideoCamera />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Canvas'" :size="15"
-                                         style="margin-top: 3px;color:#409EFF">
-                                  <FullScreen/>
+                                <el-icon
+v-if="data.payload.type==='Canvas'" :size="15"
+                                  style="margin-top: 3px; color: #409eff"
+                                >
+                                  <FullScreen />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Widget'" :size="15"
-                                         style="margin-top: 3px;color:#409EFF">
-                                  <Menu/>
+                                <el-icon
+v-if="data.payload.type==='Widget'" :size="15"
+                                  style="margin-top: 3px; color: #409eff"
+                                >
+                                  <Menu />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Text'||data.payload.type.indexOf('Label')!==-1"
-                                         :size="15"
-                                         style="margin-top: 3px;color:#E6A23C">
-                                  <List/>
+                                <el-icon
+v-if="data.payload.type==='Text'||data.payload.type.indexOf('Label')!==-1"
+                                  "
+                                  :size="15"
+                                  style="margin-top: 3px; color: #e6a23c"
+                                >
+                                  <List />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='ProgressBar'" :size="15"
-                                         style="margin-top: 3px;color:#E6A23C">
-                                  <MoreFilled/>
+                                <el-icon
+v-if="data.payload.type==='ProgressBar'" :size="15"
+                                  style="margin-top: 3px; color: #e6a23c"
+                                >
+                                  <MoreFilled />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='GameObject'" :size="15"
-                                         style="margin-top: 3px;color:#F56C6C">
-                                  <HomeFilled/>
+                                <el-icon
+v-if="data.payload.type==='GameObject'" :size="15"
+                                  style="margin-top: 3px; color: #f56c6c"
+                                >
+                                  <HomeFilled />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='Game'" :size="15"
-                                         style="margin-top: 3px;color:#F56C6C">
-                                  <Headset/>
+                                <el-icon
+v-if="data.payload.type==='Game'" :size="15"
+                                  style="margin-top: 3px; color: #f56c6c"
+                                >
+                                  <Headset />
                                 </el-icon>
-                                <el-icon v-if="data.payload.type==='TextField'" :size="15"
-                                         style="margin-top: 3px;color:#F56C6C">
-                                  <Edit/>
+                                <el-icon
+v-if="data.payload.type==='TextField'" :size="15"
+                                  style="margin-top: 3px; color: #f56c6c"
+                                >
+                                  <Edit />
                                 </el-icon>
                               </div>
-                              <span style="font-size: 14px">{{ data.name }}</span>
+                              <span style="font-size: 14px">{{
+                                data.name
+                              }}</span>
                             </template>
                           </el-tree>
                         </el-scrollbar>
@@ -3344,27 +3856,27 @@ onMounted(() => {
                     </el-card>
                   </el-col>
                   <el-col :span="8">
-                    <el-card
-                        shadow="hover"
-                    >
+                    <el-card shadow="hover">
                       <div style="height: 660px">
-                        <el-alert style="margin-bottom: 10px" title="更多功能正在加入..." type="info" show-icon
-                                  close-text="Get!"/>
+                        <el-alert
+style="margin-bottom: 10px" title="更多功能正在加入..." type="info" show-icon
+                          close-text="Get!"
+                        />
                         <el-scrollbar
-                            style="height: 100%"
-                            class="element-tree-scrollbar"
+                          style="height: 100%"
+                          class="element-tree-scrollbar"
                         >
                           <el-form
-                              label-position="left"
-                              class="element-table"
-                              label-width="100px"
-                              v-if="pocoDetail !== null"
+                            v-if="pocoDetail !== null"
+                            label-position="left"
+                            class="element-table"
+                            label-width="100px"
                           >
                             <el-form-item
-                                v-for="key in Object.keys(pocoDetail)"
-                                :label="key"
-                                style="cursor: pointer"
-                                @click="copy(JSON.stringify(pocoDetail[key]))"
+                              v-for="key in Object.keys(pocoDetail)"
+                              :label="key"
+                              style="cursor: pointer"
+                              @click="copy(JSON.stringify(pocoDetail[key]))"
                             >
                               <span>{{ pocoDetail[key] }}</span>
                             </el-form-item>
@@ -3374,8 +3886,12 @@ onMounted(() => {
                     </el-card>
                   </el-col>
                 </el-row>
-                <el-card style="height: 100%" v-show="!isShowPocoImg">
-                  <el-result icon="info" title="提示" subTitle="请先获取Poco控件元素，该功能需要引擎已接入Poco-SDK">
+                <el-card v-show="!isShowPocoImg" style="height: 100%">
+                  <el-result
+                    icon="info"
+                    title="提示"
+                    sub-title="请先获取Poco控件元素，该功能需要引擎已接入Poco-SDK"
+                  >
                   </el-result>
                 </el-card>
               </el-tab-pane>
@@ -3383,55 +3899,91 @@ onMounted(() => {
           </el-tab-pane>
           <el-tab-pane label="网页调试" name="webview">
             <div v-if="isWebView">
-              <div v-if="webViewListDetail.length==0">
-                <el-result icon="info" title="提示" subTitle="暂无webView进程">
+              <div v-if="webViewListDetail.length == 0">
+                <el-result icon="info" title="提示" sub-title="暂无webView进程">
                   <template #extra>
                     <el-button
-                        type="primary"
-                        size="mini"
-                        :loading="webViewLoading"
-                        @click="getWebViewForward"
+                      type="primary"
+                      size="mini"
+                      :loading="webViewLoading"
+                      @click="getWebViewForward"
                     >
-                      <el-icon :size="12" style="vertical-align: middle;">
-                        <Search/>
+                      <el-icon :size="12" style="vertical-align: middle">
+                        <Search />
                       </el-icon>
                       获取webView进程
-                    </el-button
-                    >
+                    </el-button>
                   </template>
                 </el-result>
               </div>
               <div v-else>
-                <el-button @click="getWebViewForward" :loading="webViewLoading" type="primary" size="mini">
+                <el-button
+                  :loading="webViewLoading"
+                  type="primary"
+                  size="mini"
+                  @click="getWebViewForward"
+                >
                   重新获取webView进程
                 </el-button>
-                <el-card style="margin-top: 15px" v-for="web in webViewListDetail" class="device-card"
-                         :body-style="{ padding: '0px 10px 10px 10px' }">
+                <el-card
+v-for="web in webViewListDetail" style="margin-top: 15px" class="device-card"
+                  :body-style="{ padding: '0px 10px 10px 10px' }"
+                >
                   <template #header>
                     <div>
-                      <div style="display: flex;align-items: center;">
-                        <img :src="getImg('chrome')" width="20"/> <strong style="margin-left: 10px">{{
-                          web['package']
-                        }}
-                        ({{ web['version'] }})</strong>
+                      <div style="display: flex; align-items: center">
+                        <img :src="getImg('chrome')" width="20" />
+                        <strong style="margin-left: 10px"
+                          >{{ web['package'] }} ({{ web['version'] }})</strong
+                        >
                       </div>
                     </div>
                   </template>
-                  <el-card :body-style="{ padding: '15px' }" v-for="w in web.children"
-                           style="margin-top: 10px; word-wrap: break-word;overflow: hidden;">
-                    <div style="display: flex;align-items: center;justify-content: space-between">
+                  <el-card
+v-for="w in web.children" :body-style="{ padding: '15px' }"
+                    style="
+                      margin-top: 10px;
+                      word-wrap: break-word;
+                      overflow: hidden;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                      "
+                    >
                       <div>
-                        <div style="display: flex;align-items: center;">
-                          <img :src="w.favicon" v-if="w.favicon" width="15" style="margin-right: 5px"/>
-                          <strong>{{ w.title.length > 0 ? w.title : '无标题' }}</strong>
+                        <div style="display: flex; align-items: center">
+                          <img
+                            v-if="w.favicon"
+                            :src="w.favicon"
+                            width="15"
+                            style="margin-right: 5px"
+                          />
+                          <strong>{{
+                            w.title.length > 0 ? w.title : '无标题'
+                          }}</strong>
                         </div>
-                        <div style="color: #909399">{{
-                            w.url.length > 50 ? w.url.substring(0, 50) + '...' : w.url
+                        <div style="color: #909399"
+                          >{{
+                            w.url.length > 50
+                              ? w.url.substring(0, 50) + '...'
+                              : w.url
                           }}
                         </div>
                       </div>
-                      <el-button type="primary" size="mini"
-                                 @click="tabWebView(web.port,w.id,(w.title.length > 0 ? w.title : '无标题'))">马上调试
+                      <el-button
+type="primary" size="mini"
+                        @click="
+                          tabWebView(
+                            web.port,
+                            w.id,
+                            w.title.length > 0 ? w.title : '无标题'
+                          )
+                        "
+                        >马上调试
                       </el-button>
                     </div>
                   </el-card>
@@ -3439,8 +3991,11 @@ onMounted(() => {
               </div>
             </div>
             <div v-else>
-              <div style="display: flex;align-items: center;">
-                <el-page-header icon="el-icon-arrow-left" @back="switchIsWebView">
+              <div style="display: flex; align-items: center">
+                <el-page-header
+                  icon="el-icon-arrow-left"
+                  @back="switchIsWebView"
+                >
                   <template #title>
                     <span style="color: #606266">返回</span>
                   </template>
@@ -3449,20 +4004,33 @@ onMounted(() => {
                   </template>
                 </el-page-header>
               </div>
-              <el-alert type="info" show-icon style="margin-top: 15px" close-text="Get!">
+              <el-alert
+                type="info"
+                show-icon
+                style="margin-top: 15px"
+                close-text="Get!"
+              >
                 <template #title>
-                  <div style="display: flex;align-items: center;">
+                  <div style="display: flex; align-items: center">
                     <span>如果您的浏览器不兼容该功能，请您及时反馈到</span>
-                    <el-link style="font-size: 13px;margin-left: 5px" type="primary" target="_blank"
-                             href="https://github.com/SonicCloudOrg/sonic-agent/issues/47">
+                    <el-link
+style="font-size: 13px;margin-left: 5px" type="primary" target="_blank"
+                      href="https://github.com/SonicCloudOrg/sonic-agent/issues/47"
+                    >
                       这里
                     </el-link>
                   </div>
                 </template>
               </el-alert>
-              <iframe v-if="!isWebView"
-                      :style="'border:1px solid #C0C4CC;;width: 100%;height: '+iFrameHeight+'px;margin-top:15px'"
-                      :src="iframeUrl">
+              <iframe
+                v-if="!isWebView"
+                :style="
+                  'border:1px solid #C0C4CC;;width: 100%;height: ' +
+                  iFrameHeight +
+                  'px;margin-top:15px'
+                "
+                :src="iframeUrl"
+              >
               </iframe>
             </div>
           </el-tab-pane>
@@ -3471,66 +4039,67 @@ onMounted(() => {
     </el-row>
   </el-card>
 </template>
+
 <style scoped lang="less">
-.line {
-  width: 2px;
-  height: inherit;
-  background: #ccc;
-  text-align: center;
-  border-radius: 1px;
-  margin-right: -2px;
-  position: relative;
-  z-index: 9;
-  cursor: e-resize;
+  .line {
+    width: 2px;
+    height: inherit;
+    background: #ccc;
+    text-align: center;
+    border-radius: 1px;
+    margin-right: -2px;
+    position: relative;
+    z-index: 9;
+    cursor: e-resize;
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 48%;
-    left: -14px;
-    display: block;
-    width: 30px;
-    height: 30px;
-    background: url("@/assets/img/drag.png") no-repeat center;
-    transform: rotate(90deg);
-    background-size: 100% 100%;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 48%;
+      left: -14px;
+      display: block;
+      width: 30px;
+      height: 30px;
+      background: url('@/assets/img/drag.png') no-repeat center;
+      transform: rotate(90deg);
+      background-size: 100% 100%;
+    }
   }
-}
 
-.lineVertical {
-  width: 100%;
-  height: 2px;
-  background: #ccc;
-  text-align: center;
-  position: relative;
-  cursor: n-resize;
-  margin: 1em calc(var(--el-card-padding) - 4px);
+  .lineVertical {
+    width: 100%;
+    height: 2px;
+    background: #ccc;
+    text-align: center;
+    position: relative;
+    cursor: n-resize;
+    margin: 1em calc(var(--el-card-padding) - 4px);
 
-  &::after {
-    content: '';
-    position: absolute;
-    left: 48%;
-    top: -14px;
-    display: block;
-    width: 30px;
-    height: 30px;
-    background: url("@/assets/img/drag.png") no-repeat center;
-    background-size: 100% 100%;
+    &::after {
+      content: '';
+      position: absolute;
+      left: 48%;
+      top: -14px;
+      display: block;
+      width: 30px;
+      height: 30px;
+      background: url('@/assets/img/drag.png') no-repeat center;
+      background-size: 100% 100%;
+    }
   }
-}
 
-#debugPic {
-  width: 100%;
-  height: auto;
-}
+  #debugPic {
+    width: 100%;
+    height: auto;
+  }
 
-#debugPocoPic {
-  width: 100%;
-  height: auto;
-}
+  #debugPocoPic {
+    width: 100%;
+    height: auto;
+  }
 
-.url-install-box {
-  position: relative;
-  height: 100%;
-}
+  .url-install-box {
+    position: relative;
+    height: 100%;
+  }
 </style>
