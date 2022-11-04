@@ -224,17 +224,22 @@ const findAgentById = (id) => {
           </el-form-item>
           <el-form-item :label="$t('devices.form.battery.level')">
             <div
-              :style="'position: relative; display: flex;align-items: center;color:'+((device['level'] === 0 ||
-                (device.status !== 'ONLINE' &&
-                  device.status !== 'DEBUGGING' &&
-                  device.status !== 'TESTING')
-                  ? '#606266'
-                  : device['level'] <= 30
-                  ? '#F56C6C'
-                  : device['level'] <= 70
-                  ? '#E6A23C'
-                  : '#67C23A')
-              "
+              :style="{
+                position: 'relative',
+                display: 'flex',
+                'align-items': 'center',
+                color:
+                  device['level'] === 0 ||
+                  (device.status !== 'ONLINE' &&
+                    device.status !== 'DEBUGGING' &&
+                    device.status !== 'TESTING')
+                    ? '#606266'
+                    : device['level'] <= 30
+                    ? '#F56C6C'
+                    : device['level'] <= 70
+                    ? '#E6A23C'
+                    : '#67C23A',
+              }"
             >
               <ColorImg
                 v-if="
@@ -265,29 +270,25 @@ const findAgentById = (id) => {
                     : '#67C23A'
                 "
               />
-              {{
-                device['level'] === 0 ||
-                (device.status !== 'ONLINE' &&
-                  device.status !== 'DEBUGGING' &&
-                  device.status !== 'TESTING')
-                  ? $t('form.unknown')
-                  : device['level']
-              }}
             </div>
           </el-form-item>
           <el-form-item :label="$t('devices.form.battery.temperature')">
             <div
-              :style="'position: relative; display: flex;align-items: center;color:'+((device['temperature'] === 0 ||
-                (device.status !== 'ONLINE' &&
+              :style="{
+                position: 'relative',
+                display: 'flex',
+                'align-items': 'center',
+                color:
+                  device.status !== 'ONLINE' &&
                   device.status !== 'DEBUGGING' &&
-                  device.status !== 'TESTING')
-                  ? '#606266'
-                  : device['temperature'] < 300
-                  ? '#67C23A'
-                  : device['temperature'] < 350
-                  ? '#E6A23C'
-                  : '#F56C6C')
-              "
+                  device.status !== 'TESTING'
+                    ? '#606266'
+                    : device['temperature'] < 300
+                    ? '#67C23A'
+                    : device['temperature'] < 350
+                    ? '#E6A23C'
+                    : '#F56C6C',
+              }"
             >
               <ColorImg
                 v-if="

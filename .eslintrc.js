@@ -90,5 +90,7 @@ module.exports = {
     'vue/no-duplicate-attributes': 'warn',
     'no-bitwise': 'warn',
     'vue/require-prop-type-constructor': 'warn',
+    'import/order': 'warn',
+    'prefer-const': 'warn',
   },
 };

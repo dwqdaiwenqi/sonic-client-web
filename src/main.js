@@ -23,14 +23,7 @@ import 'element-plus/dist/index.css';
 import axios from './http/axios';
 import { setupI18n, $tc } from './locales/setupI18n';
 
-const a = 234;
-
-const b=4235
-
-
-
-
-
+const a = 1234;
 
 async function initApp() {
   const app = createApp(App);

@@ -539,7 +539,9 @@ onUnmounted(() => {
           <el-tag
             style="margin-left: 10px"
             size="small"
-            :type="c.status===1?'success':
+            :type="
+              c.status === 1
+                ? 'success'
                 : c.status === 2
                 ? 'warning'
                 : c.status === 3
@@ -590,7 +592,9 @@ onUnmounted(() => {
                 <el-tag
                   style="margin-left: 10px"
                   size="small"
-                  :type="d.status===1?'success':
+                  :type="
+                    d.status === 1
+                      ? 'success'
                       : d.status === 2
                       ? 'warning'
                       : d.status === 3

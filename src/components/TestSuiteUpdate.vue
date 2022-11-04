@@ -296,7 +296,6 @@ onMounted(() => {
             <VueDraggableNext
               v-model="testSuite.testCases"
               tag="div"
-              tag="div"
               handle=".handle"
               animation="200"
               force-fallback="true"

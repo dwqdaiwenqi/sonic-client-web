@@ -215,7 +215,7 @@ v-for="item in localeList" :key="item.event" :index="item.event"
         >
           <el-menu-item
 :index="route.params.projectId? '/Home/' + route.params.projectId + '/Devices':'/Index/Devices'"
-            "
+            
             @click="
               pushIndex(
                 route.params.projectId

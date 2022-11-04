@@ -134,7 +134,7 @@ onMounted(() => {
       >
         <el-tab-pane
           :label="(config.normalEnable&&config.ldapEnable)?'注册账号/LDAP域账号登录':
-              : config.normalEnable
+               config.normalEnable
               ? '注册账号登录'
               : config.ldapEnable
               ? 'LDAP域账号登录'

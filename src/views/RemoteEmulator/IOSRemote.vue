@@ -1,1118 +1,1088 @@
 <script setup>
-  /*
-   *  Copyright (C) [SonicCloudOrg] Sonic Project
-   *
-   *  Licensed under the Apache License, Version 2.0 (the "License");
-   *  you may not use this file except in compliance with the License.
-   *  You may obtain a copy of the License at
-   *
-   *         http://www.apache.org/licenses/LICENSE-2.0
-   *
-   *  Unless required by applicable law or agreed to in writing, software
-   *  distributed under the License is distributed on an "AS IS" BASIS,
-   *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   *  See the License for the specific language governing permissions and
-   *  limitations under the License.
-   *
-   */
-  import { useRoute, useRouter } from 'vue-router';
-  import {
-    computed,
-    nextTick,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    watch,
-  } from 'vue';
-  import { useStore } from 'vuex';
-  import { ElMessage } from 'element-plus';
-  import useClipboard from 'vue-clipboard3';
-  import {
-    Aim,
-    Place,
-    FullScreen,
-    Download,
-    Search,
-    SwitchButton,
-    Position,
-    Pointer,
-    Camera,
-    Sunny,
-    Phone,
-    PhoneFilled,
-    Minus,
-    MuteNotification,
-    Plus,
-    CaretRight,
-    CaretLeft,
-    Operation,
-    Cellphone,
-    VideoCamera,
-    Refresh,
-    RefreshRight,
-    RefreshLeft,
-    Wallet,
-    Menu,
-    CopyDocument,
-    Delete,
-    House,
-    Back,
-    View,
-    InfoFilled,
-  } from '@element-plus/icons';
-  import axios from '@/http/axios';
-  import StepList from '@/components/StepList.vue';
-  import TestCaseList from '@/components/TestCaseList.vue';
-  import StepLog from '@/components/StepLog.vue';
-  import ElementUpdate from '@/components/ElementUpdate.vue';
-  import Pageable from '@/components/Pageable.vue';
-  import defaultLogo from '@/assets/logo.png';
-  import RenderDeviceName from '../../components/RenderDeviceName.vue';
+/*
+ *  Copyright (C) [SonicCloudOrg] Sonic Project
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+import { useRoute, useRouter } from 'vue-router';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
+import { useStore } from 'vuex';
+import { ElMessage } from 'element-plus';
+import useClipboard from 'vue-clipboard3';
+import {
+  Aim,
+  Place,
+  FullScreen,
+  Download,
+  Search,
+  SwitchButton,
+  Position,
+  Pointer,
+  Camera,
+  Sunny,
+  Phone,
+  PhoneFilled,
+  Minus,
+  MuteNotification,
+  Plus,
+  CaretRight,
+  CaretLeft,
+  Operation,
+  Cellphone,
+  VideoCamera,
+  Refresh,
+  RefreshRight,
+  RefreshLeft,
+  Wallet,
+  Menu,
+  CopyDocument,
+  Delete,
+  House,
+  Back,
+  View,
+  InfoFilled,
+} from '@element-plus/icons';
+import axios from '@/http/axios';
+import StepList from '@/components/StepList.vue';
+import TestCaseList from '@/components/TestCaseList.vue';
+import StepLog from '@/components/StepLog.vue';
+import ElementUpdate from '@/components/ElementUpdate.vue';
+import Pageable from '@/components/Pageable.vue';
+import defaultLogo from '@/assets/logo.png';
+import RenderDeviceName from '../../components/RenderDeviceName.vue';
 
-  const { toClipboard } = useClipboard();
-  const route = useRoute();
-  const store = useStore();
-  const router = useRouter();
-  const iFrameHeight = ref(0);
-  const terminalHeight = ref(0);
-  const caseList = ref(null);
-  const device = ref({});
-  const agent = ref({});
-  const uploadUrl = ref('');
-  const text = ref({ content: '' });
-  const sid = ref(0);
-  let imgWidth = 0;
-  let imgHeight = 0;
-  const loading = ref(false);
-  const appList = ref([]);
-  const filterAppText = ref('');
-  const remoteAppiumPort = ref(0);
-  // 旋转状态 // 0 90 180 270
-  const directionStatus = {
-    value: 0,
-  };
-  let moveX = 0;
-  let moveY = 0;
-  const isFixTouch = false;
-  const isPress = false;
-  let loop = null;
-  let time = 0;
-  let isLongPress = false;
-  const mouseMoveTime = 0;
-  const remoteWDAPort = ref(0);
-  const elementLoading = ref(false);
-  const isShowImg = ref(false);
-  const isDriverFinish = ref(false);
-  const imgUrl = ref('');
-  const activity = ref('');
-  const isShowTree = ref(false);
-  const elementData = ref([]);
-  const elementDetail = ref(null);
-  const elementScreenLoading = ref(false);
-  const tree = ref(null);
-  const proxyWebPort = ref(0);
-  const proxyConnPort = ref(0);
-  const currentId = ref([]);
-  const filterText = ref('');
-  const project = ref(null);
-  const testCase = ref({});
-  const activeTab = ref('main');
-  const activeTab2 = ref('step');
-  const stepLog = ref([]);
-  const debugLoading = ref(false);
-  const dialogElement = ref(false);
-  const dialogImgElement = ref(false);
-  const imgElementUrl = ref(null);
-  const updateImgEle = ref(null);
-  const title = ref('');
-  const uploadLoading = ref(false);
-  const location = ref(false);
-  const screenFps = ref('high');
-  const element = ref({
-    id: null,
-    moduleId: 0,
-    eleName: '',
-    eleType: 'image',
-    eleValue: '',
-    projectId: 0,
-  });
-  const computedCenter = (x, y, width, height) => {
-    const reX = parseInt(parseInt(x) + parseInt(width) / 2);
-    const reY = parseInt(parseInt(y) + parseInt(height) / 2);
-    return `${reX  },${  reY}`;
-  };
-  const img = import.meta.globEager('../../assets/img/*');
-  let websocket = null;
-  let terminalWebsocket = null;
+const { toClipboard } = useClipboard();
+const route = useRoute();
+const store = useStore();
+const router = useRouter();
+const iFrameHeight = ref(0);
+const terminalHeight = ref(0);
+const caseList = ref(null);
+const device = ref({});
+const agent = ref({});
+const uploadUrl = ref('');
+const text = ref({ content: '' });
+const sid = ref(0);
+let imgWidth = 0;
+let imgHeight = 0;
+const loading = ref(false);
+const appList = ref([]);
+const filterAppText = ref('');
+const remoteAppiumPort = ref(0);
+// 旋转状态 // 0 90 180 270
+const directionStatus = {
+  value: 0,
+};
+let moveX = 0;
+let moveY = 0;
+const isFixTouch = false;
+const isPress = false;
+let loop = null;
+let time = 0;
+let isLongPress = false;
+const mouseMoveTime = 0;
+const remoteWDAPort = ref(0);
+const elementLoading = ref(false);
+const isShowImg = ref(false);
+const isDriverFinish = ref(false);
+const imgUrl = ref('');
+const activity = ref('');
+const isShowTree = ref(false);
+const elementData = ref([]);
+const elementDetail = ref(null);
+const elementScreenLoading = ref(false);
+const tree = ref(null);
+const proxyWebPort = ref(0);
+const proxyConnPort = ref(0);
+const currentId = ref([]);
+const filterText = ref('');
+const project = ref(null);
+const testCase = ref({});
+const activeTab = ref('main');
+const activeTab2 = ref('step');
+const stepLog = ref([]);
+const debugLoading = ref(false);
+const dialogElement = ref(false);
+const dialogImgElement = ref(false);
+const imgElementUrl = ref(null);
+const updateImgEle = ref(null);
+const title = ref('');
+const uploadLoading = ref(false);
+const location = ref(false);
+const screenFps = ref('high');
+const element = ref({
+  id: null,
+  moduleId: 0,
+  eleName: '',
+  eleType: 'image',
+  eleValue: '',
+  projectId: 0,
+});
+const computedCenter = (x, y, width, height) => {
+  const reX = parseInt(parseInt(x) + parseInt(width) / 2);
+  const reY = parseInt(parseInt(y) + parseInt(height) / 2);
+  return `${reX},${reY}`;
+};
+const img = import.meta.globEager('../../assets/img/*');
+let websocket = null;
+let terminalWebsocket = null;
 
-  defineProps({
-    tabPosition: String,
-    canvasRectInfo: Object,
-    layoutSplitInfo: Object,
-    isSplitPressing: Boolean,
-    lineMouseup: Function,
-    lineMousemove: Function,
-    lineMousedown: Function,
-    lineMouseleave: Function,
-  });
+defineProps({
+  tabPosition: String,
+  canvasRectInfo: Object,
+  layoutSplitInfo: Object,
+  isSplitPressing: Boolean,
+  lineMouseup: Function,
+  lineMousemove: Function,
+  lineMousedown: Function,
+  lineMouseleave: Function,
+});
 
-  /**
-   * app列表处理
-   */
-  const appListPageData = ref([]);
-  const currAppListPageIndex = ref(0);
-  const currAppListPageData = ref([]);
-  // 转换分页数组
-  const transformPageable = (data) => {
-    const pageSize = 7;
-    const len = data.length;
-    let start = 0;
-    let end = pageSize;
-    // 重置分页数组
-    appListPageData.value = [];
-    while (end <= len) {
-      appListPageData.value.push(data.slice(start, end));
-      start = end;
-      end += pageSize;
-    }
-    if (len % pageSize) {
-      appListPageData.value.push(data.slice(start, len));
-    }
-    currAppListPageData.value =
-      appListPageData.value[currAppListPageIndex.value];
-  };
-  const changeAppListPage = (pageNum) => {
-    currAppListPageIndex.value = pageNum - 1;
-    currAppListPageData.value =
-      appListPageData.value[currAppListPageIndex.value];
-  };
-  const filterTableData = computed(() => {
-    const list = appList.value.filter(
-      (data) =>
-        !filterAppText.value ||
-        data.name.toLowerCase().includes(filterAppText.value.toLowerCase()) ||
-        data.bundleId.toLowerCase().includes(filterAppText.value.toLowerCase())
-    );
-    transformPageable(list);
-    return list;
-  });
-  const simLocation = ref({
-    long: 0.0,
-    lat: 0.0,
-  });
-  const locationSet = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'location',
-        detail: 'set',
-        long: `${simLocation.value.long  }`,
-        lat: `${simLocation.value.lat  }`
-      })
-    );
-    ElMessage.success({
-      message: '开始模拟定位...',
-    });
-  };
-  const locationUnset = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'location',
-        detail: 'unset',
-      })
-    );
-    ElMessage.success({
-      message: '已恢复定位',
-    });
-  };
-  const switchScreen = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'screen',
-        detail: screenFps.value,
-      })
-    );
-  };
-  const openApp = (pkg) => {
-    websocket.send(
-      JSON.stringify({
-        type: 'launch',
-        pkg,
-      })
-    );
-  };
-  const refreshAppList = () => {
-    appList.value = [];
-    ElMessage.success({
-      message: '加载应用列表中，请稍后...',
-    });
-    terminalWebsocket.send(
-      JSON.stringify({
-        type: 'appList',
-      })
-    );
-  };
-  const uninstallApp = (pkg) => {
-    ElMessage.success({
-      message: '开始卸载！请稍后...',
-    });
-    websocket.send(
-      JSON.stringify({
-        type: 'uninstallApp',
-        detail: pkg,
-      })
-    );
-  };
-  const startProxy = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'proxy',
-      })
-    );
-  };
-  const installCert = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'installCert',
-      })
-    );
-  };
-  const saveEle = () => {
-    updateImgEle.value.validate((valid) => {
-      if (valid) {
-        element.value.eleType = 'image';
-        element.value.eleValue = imgElementUrl.value;
-        element.value.projectId = project.value.id;
-        axios.put('/controller/elements', element.value).then((resp) => {
-          if (resp.code === 2000) {
-            ElMessage.success({
-              message: resp.message,
-            });
-            dialogImgElement.value = false;
-          }
-        });
-      }
-    });
-  };
-  const switchTabs = (e) => {
-    if (e.props.name === 'apps') {
-      if (appList.value.length === 0) {
-        refreshAppList();
-      }
-    }
-  };
-  const switchLocation = () => {
-    location.value = !location.value;
-    ElMessage.success({
-      message: '校准完毕！',
-    });
-  };
-  const selectCase = (val) => {
-    ElMessage.success({
-      message: '关联成功！',
-    });
-    testCase.value = val;
-  };
-  const removeCase = () => {
-    testCase.value = {};
-  };
-  const getImg = (name) => {
-    let result;
-    if (name === 'meizu') {
-      name = 'Meizu';
-    }
-    if (name === 'LENOVO') {
-      name = 'Lenovo';
-    }
-    try {
-      result = img[`../../assets/img/${  name  }.jpg`].default;
-    } catch {
-      result = img['../../assets/img/unName.jpg'].default;
-    }
-    return result;
-  };
-  watch(filterText, (newValue, oldValue) => {
-    tree.value.filter(newValue);
-  });
-  const filterNode = (value, data) => {
-    if (!value) return true;
-    return (
-      data.label.indexOf(value) !== -1 ||
-      (data.detail.name ? data.detail.name.indexOf(value) !== -1 : false)
-    );
-  };
-  const findBestNS = (elementDetail) => {
-    const result = [];
-    if (!elementDetail.name) {
-      return result;
-    }
-    let r = `name CONTAINS '${  elementDetail.name  }'`;
-    if (elementDetail.label) {
-      r += ` AND label CONTAINS '${  elementDetail.label  }'`;
-    }
-    if (elementDetail.enabled) {
-      r += ` AND enabled == ${  elementDetail.enabled}`;
-    }
-    if (elementDetail.visible) {
-      r += ` AND visible == ${  elementDetail.visible}`;
-    }
-    result.push(r);
-    return result;
-  };
-  const findBestXpath = (elementDetail) => {
-    const result = [];
-    if (elementDetail.name) {
-      result.push(
-        `//${  elementDetail.type  }[@name='${  elementDetail.name  }']`
-      );
-      result.push(
-        `//${ 
-          elementDetail.type 
-          }[contains(@name,'${ 
-          elementDetail.name 
-          }')]`
-      );
-    }
-    if (elementDetail.label) {
-      result.push(
-        `//${ 
-          elementDetail.type 
-          }[@label='${ 
-          elementDetail.label 
-          }']`
-      );
-      result.push(
-        `//${ 
-          elementDetail.type 
-          }[contains(@label,'${ 
-          elementDetail.label 
-          }')]`
-      );
-    }
-    return result;
-  };
-  const copy = (value) => {
-    try {
-      toClipboard(value);
-      ElMessage.success({
-        message: '复制成功！',
-      });
-    } catch (e) {
-      ElMessage.error({
-        message: '复制失败！',
-      });
-    }
-  };
-  const setImgData = (data) => {
-    const img = new Image();
-    imgUrl.value = data;
-    img.src = data;
-    const canvas = document.getElementById('debugPicIOS');
-      const g = canvas.getContext('2d');
-    const parent = canvas.parentNode;
-    img.onload = function () {
-      const per = img.height / img.width;
-      const width = parseInt(parent.offsetWidth);
-      const height = parseInt(width * per);
-      canvas.width = width;
-      canvas.height = height;
-    };
-    isShowImg.value = true;
-  };
-  const openSocket = (host, port, key, udId) => {
-    if ('WebSocket' in window) {
-      websocket = new WebSocket(
-        `ws://${  host  }:${  port  }/websockets/ios/${  key  }/${  udId  }/${  localStorage.getItem('SonicToken')}`,
-      );
-      terminalWebsocket = new WebSocket(
-        `ws://${  host  }:${  port  }/websockets/ios/terminal/${  key  }/${  udId  }/${  localStorage.getItem('SonicToken')}`,
-      );
-    } else {
-      console.error('不支持WebSocket');
-    }
-    websocket.onmessage = websocketOnmessage;
-    websocket.onclose = (e) => {};
-    terminalWebsocket.onmessage = terminalWebsocketOnmessage;
-    terminalWebsocket.onclose = (e) => {};
-  };
-  const screenUrls = ref([]);
-  const quickCap = () => {
-    const canvas = document.createElement('canvas');
-    const canvasCtx = canvas.getContext('2d');
-    const cap = document.getElementById('iosCap');
-    let w; let h;
-    if (directionStatus.value === 0 || directionStatus.value === 180) {
-      w = imgWidth;
-      h = imgHeight;
-    } else {
-      w = imgHeight;
-      h = imgWidth;
-    }
-    canvas.width = w;
-    canvas.height = h;
-    canvasCtx.drawImage(
-      cap,
-      0,
-      0,
-      cap.clientWidth,
-      cap.clientHeight,
-      0,
-      0,
-      w,
-      h
-    );
-    screenUrls.value.push(canvas.toDataURL('image/png', 1));
-  };
-  const toAddElement = (eleType, eleValue) => {
-    if (project.value) {
-      element.value.eleType = eleType;
-      element.value.eleValue = eleValue;
-      dialogElement.value = true;
-    }
-  };
-  const removeScreen = () => {
-    screenUrls.value = [];
-  };
-  const downloadImg = (url) => {
-    const time = new Date().getTime();
-    const link = document.createElement('a');
-    fetch(url)
-      .then((res) => res.blob())
-      .then((blob) => {
-        link.href = URL.createObjectURL(blob);
-        link.download = `${time  }.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
-  };
-  const logOutPut = ref([]);
-  const logFilter = ref('');
-  const terminalScroll = ref(null);
-  const getSyslog = () => {
-    terminalWebsocket.send(
-      JSON.stringify({
-        type: 'syslog',
-        filter: logFilter.value,
-      })
-    );
-  };
-  const stopSyslog = () => {
-    terminalWebsocket.send(
-      JSON.stringify({
-        type: 'stopSyslog',
-      })
-    );
-  };
-  const clearLogcat = () => {
-    logOutPut.value = [];
-  };
-  /**
-   * 获取 process 列表数据 & 处理
-   */
-  const processList = ref([]);
-  const processListPageData = ref([]);
-  const currProcessListPage = ref([]);
-  const currProcessListIndex = ref(0);
-  const processPageSize = 10;
-  // 转换分页数组
-  const formatProcessPageable = (data) => {
-    const len = data.length;
-    let start = 0;
-    let end = processPageSize;
-    // 重置分页数组
-    processListPageData.value = [];
-    while (end <= len) {
-      processListPageData.value.push(data.slice(start, end));
-      start = end;
-      end += processPageSize;
-    }
-    if (len % processPageSize) {
-      processListPageData.value.push(data.slice(start, len));
-    }
-    setCurrListPage();
-  };
-  const changeProcessListPage = (pageNum) => {
-    currProcessListIndex.value = pageNum - 1;
-    setCurrListPage();
-  };
-  const setCurrListPage = () => {
-    currProcessListPage.value =
-      processListPageData.value[currProcessListIndex.value];
-  };
-  watch(
-    processList,
-    (newVal) => {
-      formatProcessPageable(newVal);
-    },
-    {
-      immediate: true,
-      deep: true,
-    }
+/**
+ * app列表处理
+ */
+const appListPageData = ref([]);
+const currAppListPageIndex = ref(0);
+const currAppListPageData = ref([]);
+// 转换分页数组
+const transformPageable = (data) => {
+  const pageSize = 7;
+  const len = data.length;
+  let start = 0;
+  let end = pageSize;
+  // 重置分页数组
+  appListPageData.value = [];
+  while (end <= len) {
+    appListPageData.value.push(data.slice(start, end));
+    start = end;
+    end += pageSize;
+  }
+  if (len % pageSize) {
+    appListPageData.value.push(data.slice(start, len));
+  }
+  currAppListPageData.value = appListPageData.value[currAppListPageIndex.value];
+};
+const changeAppListPage = (pageNum) => {
+  currAppListPageIndex.value = pageNum - 1;
+  currAppListPageData.value = appListPageData.value[currAppListPageIndex.value];
+};
+const filterTableData = computed(() => {
+  const list = appList.value.filter(
+    (data) =>
+      !filterAppText.value ||
+      data.name.toLowerCase().includes(filterAppText.value.toLowerCase()) ||
+      data.bundleId.toLowerCase().includes(filterAppText.value.toLowerCase())
   );
-  const getProcessList = () => {
-    clearProcess();
-    terminalWebsocket.send(
-      JSON.stringify({
-        type: 'processList',
-      })
-    );
-  };
-  const clearProcess = () => {
-    processList.value = [];
-  };
-  const terminalWebsocketOnmessage = (message) => {
-    switch (JSON.parse(message.data).msg) {
-      case 'processListDetail': {
-        const de = JSON.parse(message.data).detail;
-        if (de && de !== null) {
-          processList.value.push(de);
-        }
-        break;
-      }
-      case 'appListDetail': {
-        const de = JSON.parse(message.data).detail;
-        if (de && de !== null) {
-          appList.value.push(de);
-        }
-        break;
-      }
-      case 'terminal':
-        logOutPut.value.push('连接成功！');
-        break;
-      case 'logDetail':
-        logOutPut.value.push(
-          JSON.parse(message.data)
-            .detail.replace(
-              /Notice/g,
-              "<span style='color: #0d84ff'>Notice</span>"
-            )
-            .replace(/Error/g, "<span style='color: #F56C6C'>Error</span>")
-        );
-        nextTick(() => {
-          terminalScroll.value.wrap.scrollTop =
-            terminalScroll.value.wrap.scrollHeight;
-        });
-        break;
-    }
-  };
-  const websocketOnmessage = (message) => {
-    switch (JSON.parse(message.data).msg) {
-      case 'setPaste': {
-        ElMessage.success({
-          message: '发送剪切板成功！',
-        });
-        break;
-      }
-      case 'paste': {
-        paste.value = JSON.parse(message.data).detail;
-        ElMessage.success({
-          message: '获取剪切板文本成功！',
-        });
-        break;
-      }
-      case 'rotation': {
-        const d = JSON.parse(message.data).value;
-        if (directionStatus.value !== d) {
-          if (d !== -1) {
-            ElMessage.success({
-              message: '检测到屏幕旋转！请稍后...',
-            });
-          }
-          directionStatus.value = JSON.parse(message.data).value;
-          location.value = !location.value;
-        }
-        break;
-      }
-      case 'proxyResult': {
-        proxyWebPort.value = JSON.parse(message.data).webPort;
-        proxyConnPort.value = JSON.parse(message.data).port;
-        nextTick(() => {
-          iFrameHeight.value = document.body.clientHeight - 280;
-        });
-        break;
-      }
-      case 'appiumPort': {
-        remoteAppiumPort.value = JSON.parse(message.data).port;
-        break;
-      }
-      case 'tree': {
-        ElMessage.success({
-          message: '获取原生控件元素成功！',
-        });
-        const result = JSON.parse(message.data);
-        currentId.value = [1];
-        elementData.value = result.detail;
-        isShowTree.value = true;
-        elementLoading.value = false;
-        if (result.img) {
-          setImgData(result.img);
-        }
-        break;
-      }
-      case 'treeFail': {
-        ElMessage.error({
-          message: '获取控件元素失败！请重新获取',
-        });
-        elementLoading.value = false;
-        break;
-      }
-      case 'installFinish': {
-        if (JSON.parse(message.data).status === 'success') {
-          ElMessage.success({
-            message: '安装成功！',
-          });
-        } else {
-          ElMessage.error({
-            message: '安装失败！',
-          });
-        }
-        break;
-      }
-      case 'openDriver': {
-        ElMessage({
-          type: JSON.parse(message.data).status,
-          message: JSON.parse(message.data).detail,
-        });
-        if (JSON.parse(message.data).status === 'success') {
-          imgWidth = JSON.parse(message.data).width;
-          imgHeight = JSON.parse(message.data).height;
-          isDriverFinish.value = true;
-        }
-        break;
-      }
-      case 'picFinish': {
-        sid.value = JSON.parse(message.data).port;
-        remoteWDAPort.value = JSON.parse(message.data).wda;
-        loading.value = false;
-        break;
-      }
-      case 'step': {
-        setStepLog(JSON.parse(message.data));
-        break;
-      }
-      case 'status': {
-        debugLoading.value = false;
-        ElMessage.info({
-          message: '运行完毕！',
-        });
-        break;
-      }
-      case 'eleScreen': {
-        if (JSON.parse(message.data).img) {
-          ElMessage.success({
-            message: '获取快照成功！',
-          });
-          imgElementUrl.value = JSON.parse(message.data).img;
-          dialogImgElement.value = true;
-        } else {
-          ElMessage.error(JSON.parse(message.data).errMsg);
-        }
-        elementScreenLoading.value = false;
-        break;
-      }
-      case 'error': {
-        ElMessage.error({
-          message: '系统出现异常！已断开远程控制！',
-        });
-        close();
-        router.go(-1);
-        break;
-      }
-    }
-  };
-  const inputValue = ref('');
-  const inputBox = ref(null);
-  const inputBoxStyle = ref({});
-  const paste = ref('');
-  const changeInputHandle = () => {
-    if (inputValue.value) {
-      console.log('aa');
-      websocket.send(
-        JSON.stringify({
-          type: 'send',
-          detail: inputValue.value,
-        })
-      );
-      inputValue.value = '';
-    }
-  };
-  const deleteInputHandle = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'send',
-        detail: '\u007F',
-      })
-    );
-  };
-  const setPasteboard = (text) => {
-    websocket.send(
-      JSON.stringify({
-        type: 'setPasteboard',
-        detail: text,
-      })
-    );
-  };
-  const getPasteboard = () => {
-    websocket.send(
-      JSON.stringify({
-        type: 'getPasteboard',
-      })
-    );
-  };
-  const mouseup = (event) => {
-    clearInterval(loop);
-    time = 0;
-    const iosCap = document.getElementById('iosCap');
-    const rect = iosCap.getBoundingClientRect();
-    let x;
-    let y;
-    if (location.value) {
-      x = parseInt((event.clientX - rect.left) * (imgHeight / iosCap.width));
-      y = parseInt((event.clientY - rect.top) * (imgWidth / iosCap.height));
-    } else {
-      x = parseInt((event.clientX - rect.left) * (imgWidth / iosCap.width));
-      y = parseInt((event.clientY - rect.top) * (imgHeight / iosCap.height));
-    }
-    inputBoxStyle.value = {
-      left: `${event.clientX - rect.left  }px`,
-      top: `${event.clientY - rect.top  }px`,
-    };
-    if (moveX === x && moveY === y) {
-      if (!isLongPress) {
-        websocket.send(
-          JSON.stringify({
-            type: 'debug',
-            detail: 'tap',
-            point: `${x  },${  y}`,
-          })
-        );
-        inputBox.value.focus();
-      }
-    } else {
-      websocket.send(
-        JSON.stringify({
-          type: 'debug',
-          detail: 'swipe',
-          pointA: `${moveX  },${  moveY}`,
-          pointB: `${x  },${  y}`,
-        })
-      );
-      inputBox.value.focus();
-    }
-    isLongPress = false;
-  };
-  const mouseleave = () => {
-    clearInterval(loop);
-    isLongPress = false;
-  };
-  const mousedown = (event) => {
-    const iosCap = document.getElementById('iosCap');
-    const rect = iosCap.getBoundingClientRect();
-    if (location.value) {
-      moveX = parseInt(
-        (event.clientX - rect.left) * (imgHeight / iosCap.width)
-      );
-      moveY = parseInt((event.clientY - rect.top) * (imgWidth / iosCap.height));
-    } else {
-      moveX = parseInt((event.clientX - rect.left) * (imgWidth / iosCap.width));
-      moveY = parseInt(
-        (event.clientY - rect.top) * (imgHeight / iosCap.height)
-      );
-    }
-    clearInterval(loop);
-    loop = setInterval(() => {
-      time += 500;
-      if (time >= 1000 && isLongPress === false) {
-        websocket.send(
-          JSON.stringify({
-            type: 'debug',
-            detail: 'longPress',
-            point: `${moveX  },${  moveY}`,
-          })
-        );
-        isLongPress = true;
-      }
-    }, 500);
-  };
-  const touchstart = async (event) => {
-    const debugPicIOS = document.getElementById('debugPicIOS');
-    const rect = debugPicIOS.getBoundingClientRect();
-    const x = parseInt(
-      (event.clientX - rect.left) * (imgWidth / debugPicIOS.width)
-    );
-    const y = parseInt(
-      (event.clientY - rect.top) * (imgHeight / debugPicIOS.height)
-    );
-    await nextTick(() => {
-      tree.value.setCurrentKey(
-        findMinSize(findElementByPoint(elementData.value, x, y))
-      );
-    });
-    await handleNodeClick(tree.value.getCurrentNode());
-  };
-  const findMinSize = (data) => {
-    if (data.length === 0) {
-      return null;
-    }
-    let result = data[0];
-    for (const i in data) {
-      if (data[i].size === result.size) {
-        if (data[i].ele.detail.name && data[i].ele.detail.name.length !== 0) {
-          result = data[i];
-        }
-      }
-      if (data[i].size < result.size) {
-        result = data[i];
-      }
-    }
-    currentId.value = [result.ele.id];
-    return result.ele.id;
-  };
-  const findElementByPoint = (ele, x, y) => {
-    const result = [];
-    for (const i in ele) {
-      const eleStartX = parseInt(ele[i].detail.x);
-      const eleStartY = parseInt(ele[i].detail.y);
-      const eleEndX = parseInt(ele[i].detail.x) + parseInt(ele[i].detail.width);
-      const eleEndY =
-        parseInt(ele[i].detail.y) + parseInt(ele[i].detail.height);
-      if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
-        result.push({
-          ele: ele[i],
-          size: parseInt(ele[i].detail.height) * parseInt(ele[i].detail.width),
-        });
-      }
-      if (ele[i].children) {
-        const childrenResult = findElementByPoint(ele[i].children, x, y);
-        if (childrenResult.length > 0) {
-          result.push.apply(result, childrenResult);
-        }
-      }
-    }
-    return result;
-  };
-  const handleNodeClick = (data) => {
-    if (data !== null) {
-      elementDetail.value = data.detail;
-      print(data);
-    }
-  };
-  const print = (data) => {
-    const canvas = document.getElementById('debugPicIOS');
-      const g = canvas.getContext('2d');
-    g.clearRect(0, 0, canvas.width, canvas.height);
-    const eleStartX = parseInt(data.detail.x);
-    const eleStartY = parseInt(data.detail.y);
-    const eleEndX = parseInt(data.detail.x) + parseInt(data.detail.width);
-    const eleEndY = parseInt(data.detail.y) + parseInt(data.detail.height);
-    const a = Math.round(Math.random() * 255);
-    const b = Math.round(Math.random() * 255);
-    const c = Math.round(Math.random() * 255);
-    g.fillStyle = `rgba(${  a  }, ${  b  }, ${  c  }, 0.6)`;
-    g.fillRect(
-      eleStartX * (canvas.width / imgWidth),
-      eleStartY * (canvas.height / imgHeight),
-      (eleEndX - eleStartX) * (canvas.width / imgWidth),
-      (eleEndY - eleStartY) * (canvas.height / imgHeight)
-    );
-  };
-  const getEleScreen = (xpath) => {
-    elementScreenLoading.value = true;
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'eleScreen',
-        xpath,
-      })
-    );
-  };
-  const clearLog = () => {
-    stepLog.value = [];
-  };
-  const setStepLog = (data) => {
-    stepLog.value.push(data);
-  };
-  const runStep = () => {
-    debugLoading.value = true;
-    activeTab2.value = 'log';
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'runStep',
-        caseId: testCase.value.id,
-      })
-    );
-  };
-  const stopStep = () => {
-    debugLoading.value = false;
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'stopStep',
-        udId: device.value.udId,
-        caseId: testCase.value.id,
-        pf: device.value.platform,
-      })
-    );
-  };
-  const pressKey = (key) => {
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'keyEvent',
-        key,
-      })
-    );
-  };
-  const beforeAvatarUpload = (file) => {
-  if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
-    return true;
-  } 
-    ElMessage.error({
-      message: '文件格式有误！',
-    });
-    return false;
-  
+  transformPageable(list);
+  return list;
+});
+const simLocation = ref({
+  long: 0.0,
+  lat: 0.0,
+});
+const locationSet = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'location',
+      detail: 'set',
+      long: `${simLocation.value.long}`,
+      lat: `${simLocation.value.lat}`,
+    })
+  );
+  ElMessage.success({
+    message: '开始模拟定位...',
+  });
 };
-  const beforeAvatarUpload2 = (file) => {
-  if (file.name.endsWith('.ipa')) {
-    return true;
-  } 
-    ElMessage.error({
-      message: '文件格式有误！',
-    });
-    return false;
-  
+const locationUnset = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'location',
+      detail: 'unset',
+    })
+  );
+  ElMessage.success({
+    message: '已恢复定位',
+  });
 };
-  const limitOut = () => {
-    ElMessage.error({
-      message: '只能添加一个文件！请先移除旧文件',
-    });
-  };
-  const uploadPackage = (content) => {
-    uploadLoading.value = true;
-    const formData = new FormData();
-    formData.append('file', content.file);
-    formData.append('type', 'packageFiles');
-    axios
-      .post('/folder/upload', formData, {
-        headers: { 'Content-type': 'multipart/form-data' },
-      })
-      .then((resp) => {
-        uploadLoading.value = false;
-        if (resp.code === 2000) {
-          install(resp.data);
-        }
-      });
-  };
-  const uploadScan = (content) => {
-    const formData = new FormData();
-    formData.append('file', content.file);
-    formData.append('type', 'imageFiles');
-    axios
-      .post('/folder/upload', formData, {
-        headers: { 'Content-type': 'multipart/form-data' },
-      })
-      .then((resp) => {
+const switchScreen = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'screen',
+      detail: screenFps.value,
+    })
+  );
+};
+const openApp = (pkg) => {
+  websocket.send(
+    JSON.stringify({
+      type: 'launch',
+      pkg,
+    })
+  );
+};
+const refreshAppList = () => {
+  appList.value = [];
+  ElMessage.success({
+    message: '加载应用列表中，请稍后...',
+  });
+  terminalWebsocket.send(
+    JSON.stringify({
+      type: 'appList',
+    })
+  );
+};
+const uninstallApp = (pkg) => {
+  ElMessage.success({
+    message: '开始卸载！请稍后...',
+  });
+  websocket.send(
+    JSON.stringify({
+      type: 'uninstallApp',
+      detail: pkg,
+    })
+  );
+};
+const startProxy = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'proxy',
+    })
+  );
+};
+const installCert = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'installCert',
+    })
+  );
+};
+const saveEle = () => {
+  updateImgEle.value.validate((valid) => {
+    if (valid) {
+      element.value.eleType = 'image';
+      element.value.eleValue = imgElementUrl.value;
+      element.value.projectId = project.value.id;
+      axios.put('/controller/elements', element.value).then((resp) => {
         if (resp.code === 2000) {
           ElMessage.success({
             message: resp.message,
           });
-          scan(resp.data);
+          dialogImgElement.value = false;
         }
       });
+    }
+  });
+};
+const switchTabs = (e) => {
+  if (e.props.name === 'apps') {
+    if (appList.value.length === 0) {
+      refreshAppList();
+    }
+  }
+};
+const switchLocation = () => {
+  location.value = !location.value;
+  ElMessage.success({
+    message: '校准完毕！',
+  });
+};
+const selectCase = (val) => {
+  ElMessage.success({
+    message: '关联成功！',
+  });
+  testCase.value = val;
+};
+const removeCase = () => {
+  testCase.value = {};
+};
+const getImg = (name) => {
+  let result;
+  if (name === 'meizu') {
+    name = 'Meizu';
+  }
+  if (name === 'LENOVO') {
+    name = 'Lenovo';
+  }
+  try {
+    result = img[`../../assets/img/${name}.jpg`].default;
+  } catch {
+    result = img['../../assets/img/unName.jpg'].default;
+  }
+  return result;
+};
+watch(filterText, (newValue, oldValue) => {
+  tree.value.filter(newValue);
+});
+const filterNode = (value, data) => {
+  if (!value) return true;
+  return (
+    data.label.indexOf(value) !== -1 ||
+    (data.detail.name ? data.detail.name.indexOf(value) !== -1 : false)
+  );
+};
+const findBestNS = (elementDetail) => {
+  const result = [];
+  if (!elementDetail.name) {
+    return result;
+  }
+  let r = `name CONTAINS '${elementDetail.name}'`;
+  if (elementDetail.label) {
+    r += ` AND label CONTAINS '${elementDetail.label}'`;
+  }
+  if (elementDetail.enabled) {
+    r += ` AND enabled == ${elementDetail.enabled}`;
+  }
+  if (elementDetail.visible) {
+    r += ` AND visible == ${elementDetail.visible}`;
+  }
+  result.push(r);
+  return result;
+};
+const findBestXpath = (elementDetail) => {
+  const result = [];
+  if (elementDetail.name) {
+    result.push(`//${elementDetail.type}[@name='${elementDetail.name}']`);
+    result.push(
+      `//${elementDetail.type}[contains(@name,'${elementDetail.name}')]`
+    );
+  }
+  if (elementDetail.label) {
+    result.push(`//${elementDetail.type}[@label='${elementDetail.label}']`);
+    result.push(
+      `//${elementDetail.type}[contains(@label,'${elementDetail.label}')]`
+    );
+  }
+  return result;
+};
+const copy = (value) => {
+  try {
+    toClipboard(value);
+    ElMessage.success({
+      message: '复制成功！',
+    });
+  } catch (e) {
+    ElMessage.error({
+      message: '复制失败！',
+    });
+  }
+};
+const setImgData = (data) => {
+  const img = new Image();
+  imgUrl.value = data;
+  img.src = data;
+  const canvas = document.getElementById('debugPicIOS');
+  const g = canvas.getContext('2d');
+  const parent = canvas.parentNode;
+  img.onload = function () {
+    const per = img.height / img.width;
+    const width = parseInt(parent.offsetWidth);
+    const height = parseInt(width * per);
+    canvas.width = width;
+    canvas.height = height;
   };
-  const scan = (url) => {
+  isShowImg.value = true;
+};
+const openSocket = (host, port, key, udId) => {
+  if ('WebSocket' in window) {
+    websocket = new WebSocket(
+      `ws://${host}:${port}/websockets/ios/${key}/${udId}/${localStorage.getItem(
+        'SonicToken'
+      )}`
+    );
+    terminalWebsocket = new WebSocket(
+      `ws://${host}:${port}/websockets/ios/terminal/${key}/${udId}/${localStorage.getItem(
+        'SonicToken'
+      )}`
+    );
+  } else {
+    console.error('不支持WebSocket');
+  }
+  websocket.onmessage = websocketOnmessage;
+  websocket.onclose = (e) => {};
+  terminalWebsocket.onmessage = terminalWebsocketOnmessage;
+  terminalWebsocket.onclose = (e) => {};
+};
+const screenUrls = ref([]);
+const quickCap = () => {
+  const canvas = document.createElement('canvas');
+  const canvasCtx = canvas.getContext('2d');
+  const cap = document.getElementById('iosCap');
+  let w;
+  let h;
+  if (directionStatus.value === 0 || directionStatus.value === 180) {
+    w = imgWidth;
+    h = imgHeight;
+  } else {
+    w = imgHeight;
+    h = imgWidth;
+  }
+  canvas.width = w;
+  canvas.height = h;
+  canvasCtx.drawImage(cap, 0, 0, cap.clientWidth, cap.clientHeight, 0, 0, w, h);
+  screenUrls.value.push(canvas.toDataURL('image/png', 1));
+};
+const toAddElement = (eleType, eleValue) => {
+  if (project.value) {
+    element.value.eleType = eleType;
+    element.value.eleValue = eleValue;
+    dialogElement.value = true;
+  }
+};
+const removeScreen = () => {
+  screenUrls.value = [];
+};
+const downloadImg = (url) => {
+  const time = new Date().getTime();
+  const link = document.createElement('a');
+  fetch(url)
+    .then((res) => res.blob())
+    .then((blob) => {
+      link.href = URL.createObjectURL(blob);
+      link.download = `${time}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+};
+const logOutPut = ref([]);
+const logFilter = ref('');
+const terminalScroll = ref(null);
+const getSyslog = () => {
+  terminalWebsocket.send(
+    JSON.stringify({
+      type: 'syslog',
+      filter: logFilter.value,
+    })
+  );
+};
+const stopSyslog = () => {
+  terminalWebsocket.send(
+    JSON.stringify({
+      type: 'stopSyslog',
+    })
+  );
+};
+const clearLogcat = () => {
+  logOutPut.value = [];
+};
+/**
+ * 获取 process 列表数据 & 处理
+ */
+const processList = ref([]);
+const processListPageData = ref([]);
+const currProcessListPage = ref([]);
+const currProcessListIndex = ref(0);
+const processPageSize = 10;
+// 转换分页数组
+const formatProcessPageable = (data) => {
+  const len = data.length;
+  let start = 0;
+  let end = processPageSize;
+  // 重置分页数组
+  processListPageData.value = [];
+  while (end <= len) {
+    processListPageData.value.push(data.slice(start, end));
+    start = end;
+    end += processPageSize;
+  }
+  if (len % processPageSize) {
+    processListPageData.value.push(data.slice(start, len));
+  }
+  setCurrListPage();
+};
+const changeProcessListPage = (pageNum) => {
+  currProcessListIndex.value = pageNum - 1;
+  setCurrListPage();
+};
+const setCurrListPage = () => {
+  currProcessListPage.value =
+    processListPageData.value[currProcessListIndex.value];
+};
+watch(
+  processList,
+  (newVal) => {
+    formatProcessPageable(newVal);
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
+const getProcessList = () => {
+  clearProcess();
+  terminalWebsocket.send(
+    JSON.stringify({
+      type: 'processList',
+    })
+  );
+};
+const clearProcess = () => {
+  processList.value = [];
+};
+const terminalWebsocketOnmessage = (message) => {
+  switch (JSON.parse(message.data).msg) {
+    case 'processListDetail': {
+      const de = JSON.parse(message.data).detail;
+      if (de && de !== null) {
+        processList.value.push(de);
+      }
+      break;
+    }
+    case 'appListDetail': {
+      const de = JSON.parse(message.data).detail;
+      if (de && de !== null) {
+        appList.value.push(de);
+      }
+      break;
+    }
+    case 'terminal':
+      logOutPut.value.push('连接成功！');
+      break;
+    case 'logDetail':
+      logOutPut.value.push(
+        JSON.parse(message.data)
+          .detail.replace(
+            /Notice/g,
+            "<span style='color: #0d84ff'>Notice</span>"
+          )
+          .replace(/Error/g, "<span style='color: #F56C6C'>Error</span>")
+      );
+      nextTick(() => {
+        terminalScroll.value.wrap.scrollTop =
+          terminalScroll.value.wrap.scrollHeight;
+      });
+      break;
+  }
+};
+const websocketOnmessage = (message) => {
+  switch (JSON.parse(message.data).msg) {
+    case 'setPaste': {
+      ElMessage.success({
+        message: '发送剪切板成功！',
+      });
+      break;
+    }
+    case 'paste': {
+      paste.value = JSON.parse(message.data).detail;
+      ElMessage.success({
+        message: '获取剪切板文本成功！',
+      });
+      break;
+    }
+    case 'rotation': {
+      const d = JSON.parse(message.data).value;
+      if (directionStatus.value !== d) {
+        if (d !== -1) {
+          ElMessage.success({
+            message: '检测到屏幕旋转！请稍后...',
+          });
+        }
+        directionStatus.value = JSON.parse(message.data).value;
+        location.value = !location.value;
+      }
+      break;
+    }
+    case 'proxyResult': {
+      proxyWebPort.value = JSON.parse(message.data).webPort;
+      proxyConnPort.value = JSON.parse(message.data).port;
+      nextTick(() => {
+        iFrameHeight.value = document.body.clientHeight - 280;
+      });
+      break;
+    }
+    case 'appiumPort': {
+      remoteAppiumPort.value = JSON.parse(message.data).port;
+      break;
+    }
+    case 'tree': {
+      ElMessage.success({
+        message: '获取原生控件元素成功！',
+      });
+      const result = JSON.parse(message.data);
+      currentId.value = [1];
+      elementData.value = result.detail;
+      isShowTree.value = true;
+      elementLoading.value = false;
+      if (result.img) {
+        setImgData(result.img);
+      }
+      break;
+    }
+    case 'treeFail': {
+      ElMessage.error({
+        message: '获取控件元素失败！请重新获取',
+      });
+      elementLoading.value = false;
+      break;
+    }
+    case 'installFinish': {
+      if (JSON.parse(message.data).status === 'success') {
+        ElMessage.success({
+          message: '安装成功！',
+        });
+      } else {
+        ElMessage.error({
+          message: '安装失败！',
+        });
+      }
+      break;
+    }
+    case 'openDriver': {
+      ElMessage({
+        type: JSON.parse(message.data).status,
+        message: JSON.parse(message.data).detail,
+      });
+      if (JSON.parse(message.data).status === 'success') {
+        imgWidth = JSON.parse(message.data).width;
+        imgHeight = JSON.parse(message.data).height;
+        isDriverFinish.value = true;
+      }
+      break;
+    }
+    case 'picFinish': {
+      sid.value = JSON.parse(message.data).port;
+      remoteWDAPort.value = JSON.parse(message.data).wda;
+      loading.value = false;
+      break;
+    }
+    case 'step': {
+      setStepLog(JSON.parse(message.data));
+      break;
+    }
+    case 'status': {
+      debugLoading.value = false;
+      ElMessage.info({
+        message: '运行完毕！',
+      });
+      break;
+    }
+    case 'eleScreen': {
+      if (JSON.parse(message.data).img) {
+        ElMessage.success({
+          message: '获取快照成功！',
+        });
+        imgElementUrl.value = JSON.parse(message.data).img;
+        dialogImgElement.value = true;
+      } else {
+        ElMessage.error(JSON.parse(message.data).errMsg);
+      }
+      elementScreenLoading.value = false;
+      break;
+    }
+    case 'error': {
+      ElMessage.error({
+        message: '系统出现异常！已断开远程控制！',
+      });
+      close();
+      router.go(-1);
+      break;
+    }
+  }
+};
+const inputValue = ref('');
+const inputBox = ref(null);
+const inputBoxStyle = ref({});
+const paste = ref('');
+const changeInputHandle = () => {
+  if (inputValue.value) {
+    console.log('aa');
     websocket.send(
       JSON.stringify({
-        type: 'scan',
-        url,
+        type: 'send',
+        detail: inputValue.value,
       })
     );
+    inputValue.value = '';
+  }
+};
+const deleteInputHandle = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'send',
+      detail: '\u007F',
+    })
+  );
+};
+const setPasteboard = (text) => {
+  websocket.send(
+    JSON.stringify({
+      type: 'setPasteboard',
+      detail: text,
+    })
+  );
+};
+const getPasteboard = () => {
+  websocket.send(
+    JSON.stringify({
+      type: 'getPasteboard',
+    })
+  );
+};
+const mouseup = (event) => {
+  clearInterval(loop);
+  time = 0;
+  const iosCap = document.getElementById('iosCap');
+  const rect = iosCap.getBoundingClientRect();
+  let x;
+  let y;
+  if (location.value) {
+    x = parseInt((event.clientX - rect.left) * (imgHeight / iosCap.width));
+    y = parseInt((event.clientY - rect.top) * (imgWidth / iosCap.height));
+  } else {
+    x = parseInt((event.clientX - rect.left) * (imgWidth / iosCap.width));
+    y = parseInt((event.clientY - rect.top) * (imgHeight / iosCap.height));
+  }
+  inputBoxStyle.value = {
+    left: `${event.clientX - rect.left}px`,
+    top: `${event.clientY - rect.top}px`,
   };
-  const install = (ipa) => {
-    if (ipa.length > 0) {
+  if (moveX === x && moveY === y) {
+    if (!isLongPress) {
       websocket.send(
         JSON.stringify({
           type: 'debug',
-          detail: 'install',
-          ipa,
+          detail: 'tap',
+          point: `${x},${y}`,
         })
       );
-      ElMessage.success({
-        message: '开始安装！请稍后...',
+      inputBox.value.focus();
+    }
+  } else {
+    websocket.send(
+      JSON.stringify({
+        type: 'debug',
+        detail: 'swipe',
+        pointA: `${moveX},${moveY}`,
+        pointB: `${x},${y}`,
+      })
+    );
+    inputBox.value.focus();
+  }
+  isLongPress = false;
+};
+const mouseleave = () => {
+  clearInterval(loop);
+  isLongPress = false;
+};
+const mousedown = (event) => {
+  const iosCap = document.getElementById('iosCap');
+  const rect = iosCap.getBoundingClientRect();
+  if (location.value) {
+    moveX = parseInt((event.clientX - rect.left) * (imgHeight / iosCap.width));
+    moveY = parseInt((event.clientY - rect.top) * (imgWidth / iosCap.height));
+  } else {
+    moveX = parseInt((event.clientX - rect.left) * (imgWidth / iosCap.width));
+    moveY = parseInt((event.clientY - rect.top) * (imgHeight / iosCap.height));
+  }
+  clearInterval(loop);
+  loop = setInterval(() => {
+    time += 500;
+    if (time >= 1000 && isLongPress === false) {
+      websocket.send(
+        JSON.stringify({
+          type: 'debug',
+          detail: 'longPress',
+          point: `${moveX},${moveY}`,
+        })
+      );
+      isLongPress = true;
+    }
+  }, 500);
+};
+const touchstart = async (event) => {
+  const debugPicIOS = document.getElementById('debugPicIOS');
+  const rect = debugPicIOS.getBoundingClientRect();
+  const x = parseInt(
+    (event.clientX - rect.left) * (imgWidth / debugPicIOS.width)
+  );
+  const y = parseInt(
+    (event.clientY - rect.top) * (imgHeight / debugPicIOS.height)
+  );
+  await nextTick(() => {
+    tree.value.setCurrentKey(
+      findMinSize(findElementByPoint(elementData.value, x, y))
+    );
+  });
+  await handleNodeClick(tree.value.getCurrentNode());
+};
+const findMinSize = (data) => {
+  if (data.length === 0) {
+    return null;
+  }
+  let result = data[0];
+  for (const i in data) {
+    if (data[i].size === result.size) {
+      if (data[i].ele.detail.name && data[i].ele.detail.name.length !== 0) {
+        result = data[i];
+      }
+    }
+    if (data[i].size < result.size) {
+      result = data[i];
+    }
+  }
+  currentId.value = [result.ele.id];
+  return result.ele.id;
+};
+const findElementByPoint = (ele, x, y) => {
+  const result = [];
+  for (const i in ele) {
+    const eleStartX = parseInt(ele[i].detail.x);
+    const eleStartY = parseInt(ele[i].detail.y);
+    const eleEndX = parseInt(ele[i].detail.x) + parseInt(ele[i].detail.width);
+    const eleEndY = parseInt(ele[i].detail.y) + parseInt(ele[i].detail.height);
+    if (x >= eleStartX && x <= eleEndX && y >= eleStartY && y <= eleEndY) {
+      result.push({
+        ele: ele[i],
+        size: parseInt(ele[i].detail.height) * parseInt(ele[i].detail.width),
       });
     }
-  };
-  const sendCommand = (text) => {
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'siri',
-        command: text,
-      })
-    );
-  };
-  const getElement = () => {
-    elementLoading.value = true;
-    websocket.send(
-      JSON.stringify({
-        type: 'debug',
-        detail: 'tree',
-      })
-    );
-  };
-  const close = () => {
-    if (websocket !== null) {
-      websocket.close();
-      websocket = null;
+    if (ele[i].children) {
+      const childrenResult = findElementByPoint(ele[i].children, x, y);
+      if (childrenResult.length > 0) {
+        result.push.apply(result, childrenResult);
+      }
     }
-    if (terminalWebsocket !== null) {
-      terminalWebsocket.close();
-      terminalWebsocket = null;
-    }
-  };
-  onBeforeUnmount(() => {
-    close();
+  }
+  return result;
+};
+const handleNodeClick = (data) => {
+  if (data !== null) {
+    elementDetail.value = data.detail;
+    print(data);
+  }
+};
+const print = (data) => {
+  const canvas = document.getElementById('debugPicIOS');
+  const g = canvas.getContext('2d');
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  const eleStartX = parseInt(data.detail.x);
+  const eleStartY = parseInt(data.detail.y);
+  const eleEndX = parseInt(data.detail.x) + parseInt(data.detail.width);
+  const eleEndY = parseInt(data.detail.y) + parseInt(data.detail.height);
+  const a = Math.round(Math.random() * 255);
+  const b = Math.round(Math.random() * 255);
+  const c = Math.round(Math.random() * 255);
+  g.fillStyle = `rgba(${a}, ${b}, ${c}, 0.6)`;
+  g.fillRect(
+    eleStartX * (canvas.width / imgWidth),
+    eleStartY * (canvas.height / imgHeight),
+    (eleEndX - eleStartX) * (canvas.width / imgWidth),
+    (eleEndY - eleStartY) * (canvas.height / imgHeight)
+  );
+};
+const getEleScreen = (xpath) => {
+  elementScreenLoading.value = true;
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'eleScreen',
+      xpath,
+    })
+  );
+};
+const clearLog = () => {
+  stepLog.value = [];
+};
+const setStepLog = (data) => {
+  stepLog.value.push(data);
+};
+const runStep = () => {
+  debugLoading.value = true;
+  activeTab2.value = 'log';
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'runStep',
+      caseId: testCase.value.id,
+    })
+  );
+};
+const stopStep = () => {
+  debugLoading.value = false;
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'stopStep',
+      udId: device.value.udId,
+      caseId: testCase.value.id,
+      pf: device.value.platform,
+    })
+  );
+};
+const pressKey = (key) => {
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'keyEvent',
+      key,
+    })
+  );
+};
+const beforeAvatarUpload = (file) => {
+  if (file.name.endsWith('.jpg') || file.name.endsWith('.png')) {
+    return true;
+  }
+  ElMessage.error({
+    message: '文件格式有误！',
   });
-  const getDeviceById = (id) => {
-    loading.value = true;
-    axios.get('/controller/devices', { params: { id } }).then((resp) => {
+  return false;
+};
+const beforeAvatarUpload2 = (file) => {
+  if (file.name.endsWith('.ipa')) {
+    return true;
+  }
+  ElMessage.error({
+    message: '文件格式有误！',
+  });
+  return false;
+};
+const limitOut = () => {
+  ElMessage.error({
+    message: '只能添加一个文件！请先移除旧文件',
+  });
+};
+const uploadPackage = (content) => {
+  uploadLoading.value = true;
+  const formData = new FormData();
+  formData.append('file', content.file);
+  formData.append('type', 'packageFiles');
+  axios
+    .post('/folder/upload', formData, {
+      headers: { 'Content-type': 'multipart/form-data' },
+    })
+    .then((resp) => {
+      uploadLoading.value = false;
       if (resp.code === 2000) {
-        device.value = resp.data;
-        if (device.value.status !== 'ONLINE') {
-          ElMessage.error({
-            message: '该设备暂时不可使用！',
-          });
-          router.replace('/Index/Devices');
-          return;
-        }
-        axios
-          .get('/controller/agents', {
-            params: { id: device.value.agentId },
-          })
-          .then((resp) => {
-            if (resp.code === 2000) {
-              agent.value = resp.data;
-              openSocket(
-                agent.value.host,
-                agent.value.port,
-                agent.value.secretKey,
-                device.value.udId
-              );
-            }
-          });
+        install(resp.data);
       }
     });
-  };
-
-  onMounted(() => {
-    if (store.state.project.id) {
-      project.value = store.state.project;
+};
+const uploadScan = (content) => {
+  const formData = new FormData();
+  formData.append('file', content.file);
+  formData.append('type', 'imageFiles');
+  axios
+    .post('/folder/upload', formData, {
+      headers: { 'Content-type': 'multipart/form-data' },
+    })
+    .then((resp) => {
+      if (resp.code === 2000) {
+        ElMessage.success({
+          message: resp.message,
+        });
+        scan(resp.data);
+      }
+    });
+};
+const scan = (url) => {
+  websocket.send(
+    JSON.stringify({
+      type: 'scan',
+      url,
+    })
+  );
+};
+const install = (ipa) => {
+  if (ipa.length > 0) {
+    websocket.send(
+      JSON.stringify({
+        type: 'debug',
+        detail: 'install',
+        ipa,
+      })
+    );
+    ElMessage.success({
+      message: '开始安装！请稍后...',
+    });
+  }
+};
+const sendCommand = (text) => {
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'siri',
+      command: text,
+    })
+  );
+};
+const getElement = () => {
+  elementLoading.value = true;
+  websocket.send(
+    JSON.stringify({
+      type: 'debug',
+      detail: 'tree',
+    })
+  );
+};
+const close = () => {
+  if (websocket !== null) {
+    websocket.close();
+    websocket = null;
+  }
+  if (terminalWebsocket !== null) {
+    terminalWebsocket.close();
+    terminalWebsocket = null;
+  }
+};
+onBeforeUnmount(() => {
+  close();
+});
+const getDeviceById = (id) => {
+  loading.value = true;
+  axios.get('/controller/devices', { params: { id } }).then((resp) => {
+    if (resp.code === 2000) {
+      device.value = resp.data;
+      if (device.value.status !== 'ONLINE') {
+        ElMessage.error({
+          message: '该设备暂时不可使用！',
+        });
+        router.replace('/Index/Devices');
+        return;
+      }
+      axios
+        .get('/controller/agents', {
+          params: { id: device.value.agentId },
+        })
+        .then((resp) => {
+          if (resp.code === 2000) {
+            agent.value = resp.data;
+            openSocket(
+              agent.value.host,
+              agent.value.port,
+              agent.value.secretKey,
+              device.value.udId
+            );
+          }
+        });
     }
-    getDeviceById(route.params.deviceId);
-    store.commit('autoChangeCollapse');
   });
+};
+
+onMounted(() => {
+  if (store.state.project.id) {
+    project.value = store.state.project;
+  }
+  getDeviceById(route.params.deviceId);
+  store.commit('autoChangeCollapse');
+});
 </script>
 
 <template>
@@ -1155,7 +1125,8 @@
   </el-dialog>
   <el-dialog v-model="dialogElement" title="控件元素信息" width="600px">
     <element-update
-v-if="dialogElement" :project-id="project['id']"
+      v-if="dialogElement"
+      :project-id="project['id']"
       :element-id="0"
       :element-obj="element"
       @flush="dialogElement = false"
@@ -1266,7 +1237,7 @@ v-if="dialogElement" :project-id="project['id']"
             </div>
           </template>
           <div style="margin-right: 40px; text-align: center">
-            <img v-if="sid===0" id="iosCap"/>
+            <img v-if="sid === 0" id="iosCap" />
             <div v-else>
               <img
                 id="iosCap"
@@ -1280,8 +1251,14 @@ v-if="dialogElement" :project-id="project['id']"
                 @mouseup="mouseup"
               />
               <input
-ref="inputBox" v-model="inputValue" class="input-box" type="text" :style="inputBoxStyle"
-                     @input="changeInputHandle" @keyup.delete="deleteInputHandle">
+                ref="inputBox"
+                v-model="inputValue"
+                class="input-box"
+                type="text"
+                :style="inputBoxStyle"
+                @input="changeInputHandle"
+                @keyup.delete="deleteInputHandle"
+              />
             </div>
             <el-button-group id="iOSpressKey">
               <el-button
@@ -1568,7 +1545,7 @@ ref="inputBox" v-model="inputValue" class="input-box" type="text" :style="inputB
                           v-model="simLocation.long"
                           style="width: 100%"
                           :precision="6"
-                            :step="0.1"
+                          :step="0.1"
                           controls-position="right"
                         />
                       </el-form-item>
@@ -1577,7 +1554,7 @@ ref="inputBox" v-model="inputValue" class="input-box" type="text" :style="inputB
                           v-model="simLocation.lat"
                           style="width: 100%"
                           :precision="6"
-                            :step="0.1"
+                          :step="0.1"
                           controls-position="right"
                         />
                       </el-form-item>
@@ -1605,8 +1582,11 @@ ref="inputBox" v-model="inputValue" class="input-box" type="text" :style="inputB
                         style="margin-top: 20px; margin-bottom: 20px"
                       >
                         <el-card
-:body-style="{backgroundColor:'#303133',cursor:'pointer'}"
+                          :body-style="{
+                            backgroundColor: '#303133',
+                            cursor: 'pointer',
                           }"
+                          }
                           @click="
                             copy(
                               'http://' + agent['host'] + ':' + remoteWDAPort
@@ -1619,7 +1599,8 @@ ref="inputBox" v-model="inputValue" class="input-box" type="text" :style="inputB
                         </el-card>
                       </div>
                       <div
-v-else v-loading="remoteWDAPort.length===0"
+                        v-else
+                        v-loading="remoteWDAPort.length === 0"
                         element-loading-spinner="el-icon-lock"
                         element-loading-background="rgba(255, 255, 255, 1)"
                         element-loading-text="driver未初始化成功"
@@ -1638,8 +1619,11 @@ v-else v-loading="remoteWDAPort.length===0"
                         style="margin-top: 20px; margin-bottom: 20px"
                       >
                         <el-card
-:body-style="{backgroundColor:'#303133',cursor:'pointer'}"
+                          :body-style="{
+                            backgroundColor: '#303133',
+                            cursor: 'pointer',
                           }"
+                          }
                           @click="
                             copy(
                               'http://' +
@@ -1658,7 +1642,8 @@ v-else v-loading="remoteWDAPort.length===0"
                         </el-card>
                       </div>
                       <div
-v-else v-loading="remoteAppiumPort===0"
+                        v-else
+                        v-loading="remoteAppiumPort === 0"
                         element-loading-spinner="el-icon-lock"
                         element-loading-background="rgba(255, 255, 255, 1)"
                         element-loading-text="AppiumDriver未初始化！"
@@ -1693,7 +1678,11 @@ v-else v-loading="remoteAppiumPort===0"
                     <strong>剪切板操作</strong>
                   </template>
                   <el-input
-v-model="paste" :rows="7" show-word-limit clearable type="textarea"
+                    v-model="paste"
+                    :rows="7"
+                    show-word-limit
+                    clearable
+                    type="textarea"
                     placeholder="请输入你要发送到剪切板的内容"
                   ></el-input>
                   <div style="text-align: center; margin-top: 15px">
@@ -1715,7 +1704,8 @@ v-model="paste" :rows="7" show-word-limit clearable type="textarea"
                     <strong>文件互传与崩溃日志</strong>
                   </template>
                   <div
-v-loading="true" style="text-align: center"
+                    v-loading="true"
+                    style="text-align: center"
                     element-loading-spinner="el-icon-lock"
                     element-loading-background="rgba(255, 255, 255, 1)"
                     element-loading-text="该功能即将开放"
@@ -1731,9 +1721,9 @@ v-loading="true" style="text-align: center"
                       :http-request="uploadPackage"
                     >
                       <i class="el-icon-upload"></i>
-                      <div class="el-upload__text"
-                        >将ipa文件拖到此处，或<em>点击上传</em></div
-                      >
+                      <div class="el-upload__text">
+                        将ipa文件拖到此处，或<em>点击上传</em>
+                      </div>
                       <template #tip>
                         <div class="el-upload__tip">只能上传ipa文件</div>
                       </template>
@@ -1762,9 +1752,9 @@ v-loading="true" style="text-align: center"
                       :http-request="uploadPackage"
                     >
                       <i class="el-icon-upload"></i>
-                      <div class="el-upload__text"
-                        >将ipa文件拖到此处，或<em>点击上传</em></div
-                      >
+                      <div class="el-upload__text">
+                        将ipa文件拖到此处，或<em>点击上传</em>
+                      </div>
                       <template #tip>
                         <div class="el-upload__tip">只能上传ipa文件</div>
                       </template>
@@ -1774,7 +1764,8 @@ v-loading="true" style="text-align: center"
               </el-col>
               <el-col :span="12">
                 <el-card
-shadow="hover" class="url-install-box"
+                  shadow="hover"
+                  class="url-install-box"
                   :body-style="{
                     position: 'absolute',
                     top: '50%',
@@ -1790,7 +1781,7 @@ shadow="hover" class="url-install-box"
                   </template>
                   <el-input
                     v-model="uploadUrl"
-                      clearable
+                    clearable
                     size="small"
                     placeholder="请输入ipa下载链接或本地路径"
                   ></el-input>
@@ -1823,7 +1814,8 @@ shadow="hover" class="url-install-box"
                       "
                     >
                       <el-avatar
-shape="square" :size="40"
+                        shape="square"
+                        :size="40"
                         :src="'data:image/png;base64,' + scope.row.iconBase64"
                       ></el-avatar>
                     </div>
@@ -1838,19 +1830,25 @@ shape="square" :size="40"
                 >
                 </el-table-column>
                 <el-table-column
-header-align="center" show-overflow-tooltip prop="bundleId"
+                  header-align="center"
+                  show-overflow-tooltip
+                  prop="bundleId"
                   label="包名"
                 >
                   <template #default="scope">
                     <div
                       style="cursor: pointer"
                       @click="copy(scope.row.bundleId)"
-                      >{{ scope.row.bundleId }}</div
                     >
+                      {{ scope.row.bundleId }}
+                    </div>
                   </template>
                 </el-table-column>
                 <el-table-column
-header-align="center" show-overflow-tooltip prop="version" label="版本号"
+                  header-align="center"
+                  show-overflow-tooltip
+                  prop="version"
+                  label="版本号"
                   width="120"
                 ></el-table-column>
                 <el-table-column align="center" width="200">
@@ -1903,12 +1901,12 @@ header-align="center" show-overflow-tooltip prop="version" label="版本号"
               下载证书</strong
             >
             <strong
-v-if="proxyConnPort!==0"
+              v-if="proxyConnPort !== 0"
               style="color: #67c23a; float: right; margin-top: 5px"
               >代理连接：{{ agent['host'] + ':' + proxyConnPort }}</strong
             >
             <iframe
-v-if="proxyWebPort!==0"
+              v-if="proxyWebPort !== 0"
               :style="
                 'border:1px solid #C0C4CC;;width: 100%;height: ' +
                 iFrameHeight +
@@ -1921,19 +1919,23 @@ v-if="proxyWebPort!==0"
               <div style="height: 300px">
                 <el-steps direction="vertical" :active="3">
                   <el-step
-title="连接Wifi" status="process"
+                    title="连接Wifi"
+                    status="process"
                     description="未连接Wifi的话，需前往Wifi列表连接你的Wifi。Wifi需要与Agent的网络互通，连接后点击刷新重新获取Wifi状态"
                   />
                   <el-step
-title="下载证书" status="process"
+                    title="下载证书"
+                    status="process"
                     description="首次抓包需要安装证书，点击打开浏览器按钮后访问链接下载证书并安装。如浏览器无法访问，请确认Agent已关闭防火墙。"
                   />
                   <el-step
-title="安装证书" status="process"
+                    title="安装证书"
+                    status="process"
                     description="进入手机【设置】->【通用】->【VPN与设备管理 / 描述文件与设备管理 / 设备管理 / 描述文件】->找到mitmproxy证书安装"
                   />
                   <el-step
-title="信任证书" status="process"
+                    title="信任证书"
+                    status="process"
                     description="进入手机【设置】->【通用】->【关于本机】最下方->【证书信任设置】信任对应证书"
                   />
                   <el-step
@@ -1986,12 +1988,18 @@ title="信任证书" status="process"
               <el-tab-pane label="Process">
                 <div style="text-align: center">
                   <el-button
-size="mini" style="margin-left: 5px"
-                             type="primary" @click="getProcessList">Search
+                    size="mini"
+                    style="margin-left: 5px"
+                    type="primary"
+                    @click="getProcessList"
+                    >Search
                   </el-button>
                   <el-button
-size="mini" style="margin-left: 5px"
-                             type="warning" @click="clearProcess">Clear
+                    size="mini"
+                    style="margin-left: 5px"
+                    type="warning"
+                    @click="clearProcess"
+                    >Clear
                   </el-button>
                 </div>
                 <el-table
@@ -2012,7 +2020,9 @@ size="mini" style="margin-left: 5px"
                     prop="name"
                   />
                   <el-table-column
-header-align="center" label="Real Application Name" show-overflow-tooltip
+                    header-align="center"
+                    label="Real Application Name"
+                    show-overflow-tooltip
                     prop="realAppName"
                   />
                   <el-table-column
@@ -2041,22 +2051,33 @@ header-align="center" label="Real Application Name" show-overflow-tooltip
                 >
                   <div style="display: flex; margin-bottom: 10px">
                     <el-input
-v-model="logFilter" style="margin-left: 5px" size="mini"
+                      v-model="logFilter"
+                      style="margin-left: 5px"
+                      size="mini"
                       placeholder="请输入输入过滤文本"
                     >
                       <template #prepend>| grep</template>
                     </el-input>
                     <el-button
-size="mini" style="margin-left: 5px"
-                               type="primary" @click="getSyslog">Search
+                      size="mini"
+                      style="margin-left: 5px"
+                      type="primary"
+                      @click="getSyslog"
+                      >Search
                     </el-button>
                     <el-button
-size="mini" style="margin-left: 5px"
-                               type="danger" @click="stopSyslog">Stop
+                      size="mini"
+                      style="margin-left: 5px"
+                      type="danger"
+                      @click="stopSyslog"
+                      >Stop
                     </el-button>
                     <el-button
-size="mini" style="margin-left: 5px"
-                               type="warning" @click="clearLogcat">Clear
+                      size="mini"
+                      style="margin-left: 5px"
+                      type="warning"
+                      @click="clearLogcat"
+                      >Clear
                     </el-button>
                   </div>
                   <el-scrollbar
@@ -2068,8 +2089,7 @@ size="mini" style="margin-left: 5px"
                       v-for="l in logOutPut"
                       style="white-space: pre-wrap"
                       v-html="l"
-                    >
-                    </div>
+                    ></div>
                   </el-scrollbar>
                 </el-card>
               </el-tab-pane>
@@ -2167,7 +2187,9 @@ size="mini" style="margin-left: 5px"
               <el-tabs v-model="activeTab2" type="border-card" stretch>
                 <el-tab-pane label="步骤列表" name="step">
                   <step-list
-:is-show-run="true" :platform="2" :is-driver-finish="isDriverFinish"
+                    :is-show-run="true"
+                    :platform="2"
+                    :is-driver-finish="isDriverFinish"
                     :case-id="testCase['id']"
                     :project-id="project['id']"
                     :debug-loading="debugLoading"
@@ -2176,7 +2198,9 @@ size="mini" style="margin-left: 5px"
                 </el-tab-pane>
                 <el-tab-pane label="运行日志" name="log">
                   <step-log
-:is-read-only="false" :debug-loading="debugLoading" :step-log="stepLog"
+                    :is-read-only="false"
+                    :debug-loading="debugLoading"
+                    :step-log="stepLog"
                     @clearLog="clearLog"
                     @stopStep="stopStep"
                   />
@@ -2213,13 +2237,18 @@ size="mini" style="margin-left: 5px"
                 </el-option>
               </el-select>
               <el-button
-v-if="project!==null" size="mini" type="primary" round style="position: absolute;right: 20px"
+                v-if="project !== null"
+                size="mini"
+                type="primary"
+                round
+                style="position: absolute; right: 20px"
                 @click="caseList.open()"
               >
                 新增用例
               </el-button>
               <test-case-list
-v-if="project!==null" ref="caseList"
+                v-if="project !== null"
+                ref="caseList"
                 :project-id="project['id']"
                 :platform="2"
                 :is-read-only="true"
@@ -2278,7 +2307,7 @@ v-if="project!==null" ref="caseList"
                       v-model="filterText"
                       style="margin-bottom: 10px"
                       size="mini"
-                        placeholder="输入class或name进行过滤"
+                      placeholder="输入class或name进行过滤"
                     ></el-input>
                     <div style="height: 660px">
                       <el-scrollbar
@@ -2380,13 +2409,15 @@ v-if="project!==null" ref="caseList"
                           <el-form-item
                             v-if="elementDetail['name']"
                             label="accessibilityId"
-                              style="cursor: pointer"
+                            style="cursor: pointer"
                           >
                             <span @click="copy(elementDetail['name'])">{{
                               elementDetail['name']
                             }}</span>
                             <el-icon
-v-if="project && project['id']" color="green" size="16"
+                              v-if="project && project['id']"
+                              color="green"
+                              size="16"
                               style="vertical-align: middle; margin-left: 10px"
                               @click="
                                 toAddElement(
@@ -2400,7 +2431,10 @@ v-if="project && project['id']" color="green" size="16"
                           </el-form-item>
                           <el-form-item label="Predicate推荐">
                             <el-table
-stripe empty-text="暂无推荐语法" border :data="findBestNS(elementDetail)"
+                              stripe
+                              empty-text="暂无推荐语法"
+                              border
+                              :data="findBestNS(elementDetail)"
                               :show-header="false"
                             >
                               <el-table-column>
@@ -2411,7 +2445,9 @@ stripe empty-text="暂无推荐语法" border :data="findBestNS(elementDetail)"
                                     >{{ scope.row }}</span
                                   >
                                   <el-icon
-v-if="project && project['id']" color="green" size="16"
+                                    v-if="project && project['id']"
+                                    color="green"
+                                    size="16"
                                     style="
                                       vertical-align: middle;
                                       margin-left: 10px;
@@ -2428,7 +2464,10 @@ v-if="project && project['id']" color="green" size="16"
                           </el-form-item>
                           <el-form-item label="xpath推荐">
                             <el-table
-stripe empty-text="暂无xpath推荐语法" border :data="findBestXpath(elementDetail)"
+                              stripe
+                              empty-text="暂无xpath推荐语法"
+                              border
+                              :data="findBestXpath(elementDetail)"
                               :show-header="false"
                             >
                               <el-table-column>
@@ -2439,7 +2478,9 @@ stripe empty-text="暂无xpath推荐语法" border :data="findBestXpath(elementD
                                     >{{ scope.row }}</span
                                   >
                                   <el-icon
-v-if="project && project['id']" color="green" size="16"
+                                    v-if="project && project['id']"
+                                    color="green"
+                                    size="16"
                                     style="
                                       vertical-align: middle;
                                       margin-left: 10px;
@@ -2460,7 +2501,9 @@ v-if="project && project['id']" color="green" size="16"
                               elementDetail['xpath']
                             }}</span>
                             <el-icon
-v-if="project && project['id']" color="green" size="16"
+                              v-if="project && project['id']"
+                              color="green"
+                              size="16"
                               style="vertical-align: middle; margin-left: 10px"
                               @click="
                                 toAddElement('xpath', elementDetail['xpath'])
@@ -2479,7 +2522,7 @@ v-if="project && project['id']" color="green" size="16"
                           <el-form-item
                             v-if="elementDetail['label']"
                             label="label"
-                              style="cursor: pointer"
+                            style="cursor: pointer"
                             @click="copy(elementDetail['label'])"
                           >
                             <span>{{ elementDetail['label'] }}</span>
@@ -2509,7 +2552,9 @@ v-if="project && project['id']" color="green" size="16"
                               }}</span
                             >
                             <el-icon
-v-if="project && project['id']" color="green" size="16"
+                              v-if="project && project['id']"
+                              color="green"
+                              size="16"
                               style="vertical-align: middle; margin-left: 10px"
                               @click="
                                 toAddElement(
@@ -2592,81 +2637,81 @@ v-if="project && project['id']" color="green" size="16"
 </template>
 
 <style scoped lang="less">
-  #iOSpressKey {
-    padding: 3px;
-    width: 100%;
-    margin-top: 10px;
-  }
+#iOSpressKey {
+  padding: 3px;
+  width: 100%;
+  margin-top: 10px;
+}
 
-  #iosCap {
-    border: 3px solid #303133;
-    border-radius: 15px;
-    cursor: url('@/assets/img/pointer.png') 12 12, crosshair;
-  }
+#iosCap {
+  border: 3px solid #303133;
+  border-radius: 15px;
+  cursor: url('@/assets/img/pointer.png') 12 12, crosshair;
+}
 
-  .line {
-    width: 2px;
-    height: inherit;
-    background: #ccc;
-    text-align: center;
-    border-radius: 1px;
-    margin-right: -2px;
-    position: relative;
-    z-index: 9;
-    cursor: e-resize;
+.line {
+  width: 2px;
+  height: inherit;
+  background: #ccc;
+  text-align: center;
+  border-radius: 1px;
+  margin-right: -2px;
+  position: relative;
+  z-index: 9;
+  cursor: e-resize;
 
-    &::after {
-      content: '';
-      position: absolute;
-      top: 48%;
-      left: -14px;
-      display: block;
-      width: 30px;
-      height: 30px;
-      background: url('@/assets/img/drag.png') no-repeat center;
-      transform: rotate(90deg);
-      background-size: 100% 100%;
-    }
-  }
-
-  .lineVertical {
-    width: 100%;
-    height: 2px;
-    background: #ccc;
-    text-align: center;
-    position: relative;
-    cursor: n-resize;
-    margin: 1em calc(var(--el-card-padding) - 4px);
-
-    &::after {
-      content: '';
-      position: absolute;
-      left: 48%;
-      top: -14px;
-      display: block;
-      width: 30px;
-      height: 30px;
-      background: url('@/assets/img/drag.png') no-repeat center;
-      background-size: 100% 100%;
-    }
-  }
-
-  #debugPicIOS {
-    width: 100%;
-    height: auto;
-  }
-
-  .url-install-box {
-    position: relative;
-    height: 100%;
-  }
-
-  .input-box {
+  &::after {
+    content: '';
     position: absolute;
-    border: none;
-    background-color: transparent;
-    outline: none;
-    z-index: -1;
-    width: 1px;
+    top: 48%;
+    left: -14px;
+    display: block;
+    width: 30px;
+    height: 30px;
+    background: url('@/assets/img/drag.png') no-repeat center;
+    transform: rotate(90deg);
+    background-size: 100% 100%;
   }
+}
+
+.lineVertical {
+  width: 100%;
+  height: 2px;
+  background: #ccc;
+  text-align: center;
+  position: relative;
+  cursor: n-resize;
+  margin: 1em calc(var(--el-card-padding) - 4px);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 48%;
+    top: -14px;
+    display: block;
+    width: 30px;
+    height: 30px;
+    background: url('@/assets/img/drag.png') no-repeat center;
+    background-size: 100% 100%;
+  }
+}
+
+#debugPicIOS {
+  width: 100%;
+  height: auto;
+}
+
+.url-install-box {
+  position: relative;
+  height: 100%;
+}
+
+.input-box {
+  position: absolute;
+  border: none;
+  background-color: transparent;
+  outline: none;
+  z-index: -1;
+  width: 1px;
+}
 </style>

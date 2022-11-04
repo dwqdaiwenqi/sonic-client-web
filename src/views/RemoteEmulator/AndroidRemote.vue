@@ -2532,7 +2532,7 @@ v-loading="loading" class="divider"
                     >
                       <el-card
 :body-style="{backgroundColor:'#303133',cursor:'pointer'}"
-                        }"
+                        }
                         @click="copy('adb connect ' + remoteAdbUrl)"
                       >
                         <strong style="color: #f2f6fc"
@@ -2559,7 +2559,7 @@ v-else v-loading="remoteAdbUrl.length===0"
                     >
                       <el-card
 :body-style="{backgroundColor:'#303133',cursor:'pointer'}"
-                        }"
+                        }
                         @click="
                           copy(
                             'http://' +
@@ -3282,7 +3282,7 @@ v-if="project!==null" ref="caseList"
                     <span
 v-if="activity.length > 0"
                       style="margin-right:10px;color: #909399;font-size: 14px; cursor: pointer"
-                      "
+                      
                           @click="copy(activity)">当前Activity： {{ activity }}</span>
                   </div>
                   <el-row :gutter="10">
@@ -3815,7 +3815,7 @@ v-if="data.payload.type==='Widget'" :size="15"
                                 </el-icon>
                                 <el-icon
 v-if="data.payload.type==='Text'||data.payload.type.indexOf('Label')!==-1"
-                                  "
+                                  
                                   :size="15"
                                   style="margin-top: 3px; color: #e6a23c"
                                 >
